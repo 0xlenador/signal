@@ -8,6 +8,7 @@
 import { CONSTANTS } from './config.js';
 import { fetchAllTransactions, fetchFirstAndLastTx } from './blockscout.js';
 import { getNativeBalance } from './wallet.js';
+import { ethers } from 'ethers';
 
 const { COMMITMENT_TIERS, LEGACY_MULTIPLIERS, TOTAL_SUPPLY, DECIMALS } = CONSTANTS;
 
@@ -47,7 +48,6 @@ export async function calculateCommitmentNode(address, onProgress) {
   }
 
   const tier = getCommitmentTier(txs.length);
-  const ethers = window.ethers;
 
   return {
     totalTxs:               txs.length,
@@ -89,8 +89,6 @@ export function getCommitmentTier(txCount) {
  * }>}
  */
 export async function calculateConvictionNode(address) {
-  const ethers = window.ethers;
-
   // Balance nativo via RPC (no consume créditos Blockscout)
   const balanceRaw = await getNativeBalance(address);
   const balanceUSDC = parseFloat(ethers.formatUnits(balanceRaw, DECIMALS));

@@ -109,8 +109,10 @@ export async function getGMCost(address) {
  * @returns {Promise<bigint>}
  */
 export async function getNodeInstantCost(nodeId, address) {
-  const contract = getReadContract();
-  return contract.getNodeInstantCost(nodeId, address);
+  return withRetry(async () => {
+    const contract = getReadContract();
+    return contract.getNodeInstantCost(nodeId, address);
+  });
 }
 
 /**
@@ -132,8 +134,10 @@ export async function hasGMToday(address) {
  * @returns {Promise<boolean>}
  */
 export async function canActivateByStreak(nodeId, address) {
-  const contract = getReadContract();
-  return contract.canActivateByStreak(nodeId, address);
+  return withRetry(async () => {
+    const contract = getReadContract();
+    return contract.canActivateByStreak(nodeId, address);
+  });
 }
 
 /**
@@ -181,9 +185,9 @@ export async function getTopUsers(count = 50) {
   for (let i = 0; i < total; i++) {
     await new Promise(r => setTimeout(r, 800)); // Delay inicial/entre iteraciones
     try {
-      const addr = await contract.userList(i);
+      const addr = await withRetry(async () => contract.userList(i));
       await new Promise(r => setTimeout(r, 600)); // Delay entre peticiones del mismo usuario
-      const data = await contract.getUserData(addr);
+      const data = await withRetry(async () => contract.getUserData(addr));
       usersData.push({
         address: addr,
         points: Number(data.totalPoints),

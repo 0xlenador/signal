@@ -8,9 +8,9 @@ let ethersAdapter = null;
 export async function initAppKit() {
     try {
         kit = new UnifiedBalanceKit();
-        const provider = getProvider();
-        // Fallback or generic initialization if getProvider returns browser provider
-        ethersAdapter = createEthersAdapterFromProvider(provider);
+        // createEthersAdapterFromProvider espera un objeto con el EIP-1193 provider (ej. window.ethereum)
+        if (!window.ethereum) throw new Error("No window.ethereum detected");
+        ethersAdapter = await createEthersAdapterFromProvider({ provider: window.ethereum });
         console.log("Unified Balance Kit inicializado.");
     } catch(e) {
         console.error("Error inicializando App Kit:", e);

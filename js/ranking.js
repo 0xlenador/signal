@@ -4,29 +4,38 @@
  * Fuente de datos: contrato on-chain (getTopUsers).
  */
 
-import { getTopUsers, getUserCount } from './contract.js';
+import { getUserCount } from './contract.js';
 import { Cache } from './cache.js';
 import { CONSTANTS } from './config.js';
+import { t } from './i18n.js';
 
 const { CACHE_TTL } = CONSTANTS;
 
-/**
- * Obtiene los datos del ranking (con caché).
- * @param {number} [count=50]
- * @returns {Promise<Array<{address, points, forkLevel}>>}
- */
-export async function fetchRanking(count = 50) {
-  const cacheKey = `ranking_${count}`;
+export async function fetchRanking() {
+  const cacheKey = `ranking_cf`;
   const cached = Cache.get(cacheKey);
   if (cached) return cached;
 
+  // Obtenemos el total registrado on-chain
   const total = await getUserCount();
-  // Pausa pequeña para no colisionar con el rate limit
-  await new Promise(r => setTimeout(r, 200));
-  const users = await getTopUsers(count);
+  let users = [];
+
+  try {
+    // 1. Descargamos la lista estática superrápida desde Cloudflare (max 1h antigüedad)
+    const WORKER_URL = 'https://signal0xl-ranking.ellenador-eth.workers.dev'; 
+    const response = await fetch(WORKER_URL);
+    if (response.ok) {
+      users = await response.json();
+    } else {
+      console.warn("Worker no disponible, usando arreglo vacío por ahora.");
+    }
+  } catch (error) {
+    console.warn("No se pudo contactar al Cloudflare Worker:", error);
+  }
 
   const result = { users, total };
-  Cache.set(cacheKey, result, CACHE_TTL.RANKING);
+  // Guardamos en caché local (1 minuto) para no re-descargar de CF a cada click
+  Cache.set(cacheKey, result, 60); 
   return result;
 }
 
@@ -35,17 +44,42 @@ export async function fetchRanking(count = 50) {
  * @param {string} containerId - ID del elemento DOM contenedor
  * @param {string} [currentAddress] - Dirección del usuario conectado (para resaltar)
  */
-export async function renderRanking(containerId, currentAddress = null) {
+export async function renderRanking(containerId, currentAddress = null, currentUserData = null) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  container.innerHTML = '<p class="loading-text">⏳ Cargando ranking...</p>';
+  container.innerHTML = `<p class="loading-text">${t('ranking.loading')}</p>`;
 
   try {
-    const { users, total } = await fetchRanking(50);
+    const { users, total } = await fetchRanking();
+
+    // -- INYECCIÓN HÍBRIDA (Tiempo Real Local) --
+    if (currentAddress && currentUserData && currentUserData.exists) {
+      // Buscamos si el usuario ya está en la tabla descargada
+      const existingIdx = users.findIndex(u => u.address.toLowerCase() === currentAddress.toLowerCase());
+      const realTimePoints = Number(currentUserData.totalPoints);
+      const realTimeFork = Number(currentUserData.forkLevel) == 0 ? 1 : Number(currentUserData.forkLevel);
+      
+      if (existingIdx !== -1) {
+        // Si ya está, actualizamos sus puntos
+        users[existingIdx].points = realTimePoints;
+        users[existingIdx].forkLevel = realTimeFork;
+      } else {
+        // Si no está (ej. estaba fuera del Top 100), lo añadimos a la lista
+        users.push({
+          address: currentAddress,
+          points: realTimePoints,
+          forkLevel: realTimeFork
+        });
+      }
+      
+      // Reordenamos la lista localmente para que el usuario "suba" al instante
+      users.sort((a, b) => b.points - a.points);
+    }
+    // ------------------------------------------
 
     if (!users || users.length === 0) {
-      container.innerHTML = '<p class="empty-text">Aún no hay señales en la red. ¡Sé el primero en hacer GM!</p>';
+      container.innerHTML = `<p class="empty-text">${t('ranking.noData')} (Esperando sincronización de Cloudflare)</p>`;
       return;
     }
 
@@ -61,7 +95,7 @@ export async function renderRanking(containerId, currentAddress = null) {
           <td class="rank-cell">${rankIcon}</td>
           <td class="addr-cell">
             <span class="addr-text" title="${u.address}">${shortAddr}</span>
-            ${isMe ? '<span class="badge badge-me">Tú</span>' : ''}
+            ${isMe ? `<span class="badge badge-me">${t('js.you')}</span>` : ''}
           </td>
           <td class="fork-cell">${forkLabel}</td>
           <td class="points-cell"><strong>${u.points.toLocaleString()}</strong> pts</td>
@@ -71,17 +105,17 @@ export async function renderRanking(containerId, currentAddress = null) {
 
     container.innerHTML = `
       <div class="ranking-header">
-        <h3>📊 Tabla de Señales</h3>
-        <span class="total-count">${total} señaladores registrados</span>
+        <h3>${t('ranking.title')}</h3>
+        <span class="total-count">${total} ${t('ranking.registered')}</span>
       </div>
       <div class="table-wrapper">
         <table class="ranking-table">
           <thead>
             <tr>
               <th>#</th>
-              <th>Wallet</th>
-              <th>Estado</th>
-              <th>Puntaje</th>
+              <th>${t('js.rankingHeaders')[1]}</th>
+              <th>${t('js.rankingHeaders')[2]}</th>
+              <th>${t('js.rankingHeaders')[3]}</th>
             </tr>
           </thead>
           <tbody>
@@ -92,6 +126,6 @@ export async function renderRanking(containerId, currentAddress = null) {
     `;
   } catch (err) {
     console.error('[Ranking] Error:', err);
-    container.innerHTML = `<p class="error-text">❌ Error al cargar el ranking: ${err.message}</p>`;
+    container.innerHTML = `<p class="error-text">❌ ${t('js.error')} ${err.message}</p>`;
   }
 }

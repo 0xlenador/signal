@@ -17,7 +17,10 @@ Todos los agentes y subagentes que interactúen con el código de este proyecto 
 * **Validación de Integridad:** Audita cualquier implementación que conecte el frontend con la blockchain. Asegúrate de que los datos enviados a los Smart Contracts (parámetros, valores de transacciones) no puedan ser manipulados desde el cliente para obtener ventajas injustas. 
 * **Desconfianza por Defecto:** Nunca confíes ciegamente en los datos que provienen del lado del cliente. La interfaz es solo visual; la seguridad real debe estar respaldada por validaciones robustas y la lógica del contrato.
 
-### 4. Regla de Oro del Flujo de Trabajo
+### 4. Entorno de Red (Arc Testnet)
+* **Mentalidad de Mainnet:** Aunque el nombre de la red incluya la palabra "Testnet", para los propósitos de *Signal 0xL*, **Arc Testnet DEBE ser tratada con la misma seriedad, profesionalismo y rigor que una Mainnet**. No es un entorno desechable ni un "chiste"; las implementaciones aquí son para producción real y de máxima importancia.
+
+### 5. Regla de Oro del Flujo de Trabajo
 * **Piensa Antes de Codificar:** Analiza cómo tus cambios afectarán la seguridad y la arquitectura global.
 * **Regla del Boy Scout:** Deja el código siempre mejor y más limpio de lo que lo encontraste, garantizando que tus mejoras no rompan la flexibilidad del sistema.
 </RULE[project_guidelines]>

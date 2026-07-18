@@ -1,0 +1,12 @@
+name = "signal0xl-ranking"
+main = "src/index.js"
+compatibility_date = "2024-03-20"
+
+# El cron se ejecutará cada hora en el minuto 0
+[triggers]
+crons = ["0 * * * *"]
+
+# Binding para la base de datos KV
+[[kv_namespaces]]
+binding = "RANKING_DB"
+id = "d0e8b85fd9f448769314af09300bb11d"

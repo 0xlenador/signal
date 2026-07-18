@@ -48,20 +48,20 @@ export const CONSTANTS = {
 
   // Multiplicadores de Legado (según antigüedad de la primera TX)
   LEGACY_MULTIPLIERS: [
-    { label: 'Génesis (Día 1)',      maxDays: 1,    multiplier: 3.0  },
-    { label: 'Fundador (1ª Semana)', maxDays: 7,    multiplier: 2.5  },
-    { label: 'Pionero (1er Mes)',    maxDays: 30,   multiplier: 2.0  },
-    { label: 'Veterano (1er Trim.)', maxDays: 90,   multiplier: 1.5  },
-    { label: 'Activo',               maxDays: Infinity, multiplier: 1.0 },
+    { index: 0, label: 'Génesis (Día 1)',      maxDays: 1,    multiplier: 3.0  },
+    { index: 1, label: 'Fundador (1ª Semana)', maxDays: 7,    multiplier: 2.5  },
+    { index: 2, label: 'Pionero (1er Mes)',    maxDays: 30,   multiplier: 2.0  },
+    { index: 3, label: 'Veterano (1er Trim.)', maxDays: 90,   multiplier: 1.5  },
+    { index: 4, label: 'Activo',               maxDays: Infinity, multiplier: 1.0 },
   ],
 
   // Multiplicadores de Compromiso (según número de txs)
   COMMITMENT_TIERS: [
-    { label: 'Iniciante',   maxTxs: 50,   multiplier: 1.0  },
-    { label: 'Activo',      maxTxs: 200,  multiplier: 1.25 },
-    { label: 'Comprometido',maxTxs: 500,  multiplier: 1.5  },
-    { label: 'Veterano',    maxTxs: 1000, multiplier: 1.75 },
-    { label: 'Élite',       maxTxs: Infinity, multiplier: 2.0 },
+    { index: 0, label: 'Iniciante',   maxTxs: 50,   multiplier: 1.0  },
+    { index: 1, label: 'Activo',      maxTxs: 200,  multiplier: 1.25 },
+    { index: 2, label: 'Comprometido',maxTxs: 500,  multiplier: 1.5  },
+    { index: 3, label: 'Veterano',    maxTxs: 1000, multiplier: 1.75 },
+    { index: 4, label: 'Élite',       maxTxs: Infinity, multiplier: 2.0 },
   ],
 
   // TTL de caché (en milisegundos)

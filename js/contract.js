@@ -169,40 +169,7 @@ export async function getDaysSinceLastGM(address) {
   return Number(await contract.getDaysSinceLastGM(address));
 }
 
-/**
- * Retorna las top N wallets del ranking.
- * @param {number} [count=50]
- * @returns {Promise<Array<{address: string, points: number, forkLevel: number}>>}
- */
-export async function getTopUsers(count = 50) {
-  const contract = getReadContract();
-  const total = Number(await contract.getUserCount());
-  if (total === 0) return [];
-
-  const usersData = [];
-  // Obtenemos los usuarios uno por uno. Añadimos delay ANTES de empezar y ENTRE peticiones
-  // para no saturar el RPC (rate limit de 1 req/sec en Arc Testnet)
-  for (let i = 0; i < total; i++) {
-    await new Promise(r => setTimeout(r, 800)); // Delay inicial/entre iteraciones
-    try {
-      const addr = await withRetry(async () => contract.userList(i));
-      await new Promise(r => setTimeout(r, 600)); // Delay entre peticiones del mismo usuario
-      const data = await withRetry(async () => contract.getUserData(addr));
-      usersData.push({
-        address: addr,
-        points: Number(data.totalPoints),
-        forkLevel: Number(data.forkLevel) == 0 ? 1 : Number(data.forkLevel),
-      });
-    } catch (e) {
-      console.warn('Error leyendo usuario en indice', i, e);
-    }
-  }
-
-  // Ordenamiento local (JavaScript es mucho más eficiente que EVM para esto)
-  usersData.sort((a, b) => b.points - a.points);
-
-  return usersData.slice(0, count);
-}
+// getTopUsers fue movido a la lógica del Cloudflare Worker para escalabilidad
 
 /**
  * Retorna el baseGMCost del contrato en wei.
@@ -332,4 +299,68 @@ export function parseContractError(err) {
  */
 export function weiToUSDC(wei, dp = 4) {
   return `${parseFloat(ethers.formatUnits(wei, 18)).toFixed(dp)} USDC`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUTODETECCIÓN DE AGENTES (OPCIÓN B)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Busca en la blockchain todos los Agentes (ERC-8004) que posee una wallet.
+ * Utiliza los eventos Transfer del IdentityRegistry oficial de Arc.
+ * @param {string} address - Dirección de la wallet
+ * @returns {Promise<bigint[]>} - Array de IDs de Agentes (como BigInt)
+ */
+export async function fetchUserAgents(address) {
+  const provider = getProvider();
+  const registryAddr = "0x8004A818BFB912233c491871b3d84c89A494BD9e";
+  
+  // Topic 0 para Transfer(address,address,uint256)
+  const transferTopic = ethers.id("Transfer(address,address,uint256)");
+  const paddedAddress = ethers.zeroPadValue(address, 32);
+
+  try {
+    // Buscamos todos los logs donde la wallet haya sido el destino (Topic 2 en ERC721)
+    const logs = await provider.getLogs({
+      address: registryAddr,
+      fromBlock: 0,
+      toBlock: "latest",
+      topics: [transferTopic, null, paddedAddress]
+    });
+
+    // Extraemos los Token IDs (están en el topic 3 de un Transfer ERC721)
+    const potentialIds = new Set();
+    for (const log of logs) {
+      if (log.topics.length === 4) {
+        potentialIds.add(BigInt(log.topics[3]));
+      }
+    }
+
+    if (potentialIds.size === 0) return [];
+
+    // Verificamos cuáles de estos IDs todavía le pertenecen al usuario consultando ownerOf
+    const abi = ["function ownerOf(uint256) view returns (address)"];
+    const registry = new ethers.Contract(registryAddr, abi, provider);
+    
+    const ownedIds = [];
+    // Promise.all para paralelizarlas si son varias, aunque en Testnet solemos usar secuencial,
+    // pero como son pocas IDs, no debería alcanzar el límite tan rápido.
+    for (const id of potentialIds) {
+      try {
+        const owner = await registry.ownerOf(id);
+        if (owner.toLowerCase() === address.toLowerCase()) {
+          ownedIds.push(id);
+        }
+      } catch {
+        // Ignorar IDs quemados o errores
+      }
+      // Pequeña pausa para no triggerear el rate limit de Arc
+      await new Promise(r => setTimeout(r, 200));
+    }
+
+    return ownedIds.sort((a, b) => (a < b ? -1 : 1));
+  } catch (err) {
+    console.error("[fetchUserAgents] Error buscando agentes:", err);
+    return []; // Retorna vacío si falla el nodo
+  }
 }

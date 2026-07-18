@@ -6,6 +6,7 @@
 
 import { fetchNetworkStats } from './blockscout.js';
 import { CONSTANTS } from './config.js';
+import { t, getLanguage } from './i18n.js';
 
 const { NETWORK_POLL_INTERVAL } = CONSTANTS;
 
@@ -80,35 +81,35 @@ export async function renderNetworkStats(containerId) {
       <div class="network-grid">
         <div class="metric-card">
           <div class="metric-icon">⚡</div>
-          <div class="metric-label">Velocidad de Bloque</div>
+          <div class="metric-label">${t('network.blockSpeed')}</div>
           <div class="metric-value">${blockTimeSec}s</div>
-          <div class="metric-sub">tiempo promedio</div>
+          <div class="metric-sub">${t('network.avgTime')}</div>
         </div>
 
         <div class="metric-card">
           <div class="metric-icon">⛽</div>
-          <div class="metric-label">Gas Promedio</div>
+          <div class="metric-label">${t('network.avgGas')}</div>
           <div class="metric-value">${gasAvg}</div>
           <div class="metric-sub">Gwei</div>
         </div>
 
         <div class="metric-card">
           <div class="metric-icon">📦</div>
-          <div class="metric-label">Bloques Totales</div>
+          <div class="metric-label">${t('network.totalBlocks')}</div>
           <div class="metric-value">${totalBlocks}</div>
-          <div class="metric-sub">en Arc Testnet</div>
+          <div class="metric-sub">${t('network.inArcTestnet')}</div>
         </div>
 
         <div class="metric-card">
           <div class="metric-icon">🔄</div>
-          <div class="metric-label">TXs Hoy</div>
+          <div class="metric-label">${t('network.txToday')}</div>
           <div class="metric-value">${txToday}</div>
-          <div class="metric-sub">transacciones</div>
+          <div class="metric-sub">${t('network.transactions')}</div>
         </div>
 
         <div class="metric-card metric-card-wide">
           <div class="metric-icon">📡</div>
-          <div class="metric-label">Utilización de Red</div>
+          <div class="metric-label">${t('network.utilization')}</div>
           <div class="utilization-bar">
             <div class="utilization-fill ${utilClass}" style="width: ${Math.min(utilization, 100)}%"></div>
           </div>
@@ -117,18 +118,18 @@ export async function renderNetworkStats(containerId) {
 
         <div class="metric-card metric-card-wide">
           <div class="metric-icon">💰</div>
-          <div class="metric-label">Gas (Lento / Medio / Rápido)</div>
+          <div class="metric-label">${t('network.gasTiers')}</div>
           <div class="gas-tiers">
             <span class="gas-slow">🐢 ${stats.gasSlow.toFixed(1)}</span>
             <span class="gas-avg">⚡ ${stats.gasAverage.toFixed(1)}</span>
             <span class="gas-fast">🚀 ${stats.gasFast.toFixed(1)}</span>
           </div>
-          <div class="metric-sub">en Gwei</div>
+          <div class="metric-sub">${t('network.inGwei')}</div>
         </div>
       </div>
       <div class="network-footer">
-        <span>Actualizado: ${new Date().toLocaleTimeString('es-ES')}</span>
-        <span>Fuente: Blockscout PRO API · Refresca cada ${NETWORK_POLL_INTERVAL / 1000}s</span>
+        <span>${t('network.updated', {time: new Date().toLocaleTimeString(getLanguage())})}</span>
+        <span>${t('network.source', {sec: NETWORK_POLL_INTERVAL / 1000})}</span>
       </div>
     `;
   } catch (err) {
@@ -138,9 +139,9 @@ export async function renderNetworkStats(containerId) {
       // Solo mostrar error si no hay datos previos
       container.innerHTML = `
         <div class="network-error">
-          <p>⚠️ No se pudieron cargar las métricas de red.</p>
+          <p>${t('network.error')}</p>
           <p class="error-detail">${err.message}</p>
-          <button id="btn-retry-network" class="btn btn-secondary">Reintentar</button>
+          <button id="btn-retry-network" class="btn btn-secondary">${t('network.retry')}</button>
         </div>
       `;
       document.getElementById('btn-retry-network')?.addEventListener('click', () => {

@@ -12,7 +12,8 @@ import {
 import {
   getUserData, getGMCost, getNodeInstantCost, canActivateByStreak,
   hasGMToday, hasRunestone, doGM, activateNodeInstant, activateNodeByStreak,
-  resetToVIP, parseContractError, weiToUSDC, resetContract, attachAgent
+  resetToVIP, parseContractError, weiToUSDC, resetContract, attachAgent,
+  fetchUserAgents
 } from './contract.js';
 import {
   calculateCommitmentNode, calculateConvictionNode, calculateLegacyNode
@@ -21,6 +22,7 @@ import { renderRanking } from './ranking.js';
 import { initNetworkPanel, stopPolling } from './network.js';
 import { Cache } from './cache.js';
 import { initAppKit, depositFromBase, depositFromArb, spendToArc } from './app-kit.js';
+import { initI18n, setLanguage, getLanguage, t } from './i18n.js';
 
 // ─── Estado global de la UI ───────────────────────────────────────────────
 
@@ -37,14 +39,15 @@ let appState = {
 // ─── Init ─────────────────────────────────────────────────────────────────
 
 window.addEventListener('DOMContentLoaded', () => {
+  initI18n();
   setupNavigation();
   setupWalletListeners();
   setupGlobalButtons();
   showSection('gm-section');
 
-  // Si hay sesión previa en MetaMask, intentar reconectar silenciosamente
-  if (hasInjectedProvider() && window.ethereum.selectedAddress) {
-    silentReconnect();
+  // Si hay provider inyectado, intentar reconectar silenciosamente (con un pequeño delay por latencia de inyección)
+  if (hasInjectedProvider()) {
+    setTimeout(silentReconnect, 100);
   }
 
   // Inicializar panel de red siempre (no requiere wallet)
@@ -56,10 +59,12 @@ window.addEventListener('DOMContentLoaded', () => {
 async function silentReconnect() {
   try {
     const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-    if (accounts.length > 0) {
+    if (accounts && accounts.length > 0) {
       await connectWallet();
     }
-  } catch { /* silencioso */ }
+  } catch (err) {
+    console.warn('[App] Reconexión silenciosa falló:', err);
+  }
 }
 
 // ─── Navegación ───────────────────────────────────────────────────────────
@@ -70,7 +75,7 @@ function setupNavigation() {
       const section = btn.getAttribute('data-section');
       showSection(section);
       // Cargar datos de la sección al navegar
-      if (section === 'ranking-section') renderRanking('ranking-container', appState.address);
+      if (section === 'ranking-section') renderRanking('ranking-container', appState.address, appState.userData);
       if (section === 'nodes-section' && appState.address) loadNodesData();
     });
   });
@@ -109,14 +114,39 @@ function setupWalletListeners() {
   });
 
   onWallet('wrongNetwork', () => {
-    showToast('⚠️ Red incorrecta. Cambia a Arc Testnet.', 'warning');
+    showToast(`⚠️ ${t('js.error')} Arc Testnet.`, 'warning');
   });
 }
 
 function setupGlobalButtons() {
+  // Language Switcher
+  const langSwitcher = document.getElementById('lang-switcher');
+  if (langSwitcher) {
+    langSwitcher.value = getLanguage();
+    langSwitcher.addEventListener('change', (e) => {
+      setLanguage(e.target.value);
+    });
+  }
   // Botón conectar wallet
   document.getElementById('btn-connect-wallet')?.addEventListener('click', handleConnect);
   document.getElementById('btn-connect-wallet-hero')?.addEventListener('click', handleConnect);
+
+  // Botón desconectar wallet
+  document.getElementById('btn-disconnect-wallet')?.addEventListener('click', () => {
+    disconnectWallet();
+    document.getElementById('wallet-dropdown')?.classList.add('hidden');
+  });
+
+  // Ocultar dropdown al hacer click fuera
+  document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('wallet-dropdown');
+    const btnConnect = document.getElementById('btn-connect-wallet');
+    if (dropdown && !dropdown.classList.contains('hidden')) {
+      if (e.target !== btnConnect && !btnConnect.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.add('hidden');
+      }
+    }
+  });
 
   // Botón GM
   document.getElementById('btn-gm')?.addEventListener('click', handleGM);
@@ -139,19 +169,19 @@ function setupGlobalButtons() {
   document.getElementById('btn-fund-base')?.addEventListener('click', async () => {
     setButtonLoading('btn-fund-base', true, '⌛');
     try { await depositFromBase(); showToast('✅ Depósito desde Base iniciado', 'success'); }
-    catch(e) { showToast('❌ Error en depósito', 'error'); }
+    catch(e) { showToast(`❌ ${e.message}`, 'error'); }
     setButtonLoading('btn-fund-base', false, 'Depositar desde Base Sepolia');
   });
   document.getElementById('btn-fund-arb')?.addEventListener('click', async () => {
     setButtonLoading('btn-fund-arb', true, '⌛');
     try { await depositFromArb(); showToast('✅ Depósito desde Arb iniciado', 'success'); }
-    catch(e) { showToast('❌ Error en depósito', 'error'); }
+    catch(e) { showToast(`❌ ${e.message}`, 'error'); }
     setButtonLoading('btn-fund-arb', false, 'Depositar desde Arb Sepolia');
   });
   document.getElementById('btn-bridge-arc')?.addEventListener('click', async () => {
     setButtonLoading('btn-bridge-arc', true, '⌛');
     try { await spendToArc(); showToast('✅ Fondos enviados a Arc Testnet', 'success'); }
-    catch(e) { showToast('❌ Error en envío', 'error'); }
+    catch(e) { showToast(`❌ ${e.message}`, 'error'); }
     setButtonLoading('btn-bridge-arc', false, 'Traer fondos a Arc Testnet');
   });
 }
@@ -159,6 +189,13 @@ function setupGlobalButtons() {
 // ─── Conexión Wallet ───────────────────────────────────────────────────────
 
 async function handleConnect() {
+  if (appState.address) {
+    // Si ya está conectado, alterna el dropdown de desconexión
+    const dropdown = document.getElementById('wallet-dropdown');
+    if (dropdown) dropdown.classList.toggle('hidden');
+    return;
+  }
+
   if (!hasInjectedProvider()) {
     showToast('❌ MetaMask no detectado. Instálalo en metamask.io', 'error');
     return;
@@ -192,6 +229,7 @@ function updateWalletUI(address) {
 
   if (address) {
     if (btnConnect) {
+      btnConnect.removeAttribute('data-i18n'); // Proteger de traducciones
       btnConnect.textContent = shortAddress(address);
       btnConnect.classList.remove('btn-primary');
       btnConnect.classList.add('btn-secondary');
@@ -200,14 +238,15 @@ function updateWalletUI(address) {
     if (heroEl)   heroEl.classList.add('hidden');
     if (mainEl)   mainEl.classList.remove('hidden');
     
-    // Habilitar App Kit
-    initAppKit();
-    document.getElementById('btn-fund-base').disabled = false;
-    document.getElementById('btn-fund-arb').disabled = false;
-    document.getElementById('btn-bridge-arc').disabled = false;
+    // Habilitar App Kit (Desactivado temporalmente por falta de soporte CCTP en Arc)
+    // initAppKit();
+    // document.getElementById('btn-fund-base').disabled = false;
+    // document.getElementById('btn-fund-arb').disabled = false;
+    // document.getElementById('btn-bridge-arc').disabled = false;
   } else {
     if (btnConnect) {
-      btnConnect.textContent = '🔗 Conectar';
+      btnConnect.setAttribute('data-i18n', 'header.connect');
+      btnConnect.textContent = t('header.connect');
       btnConnect.classList.remove('btn-secondary');
       btnConnect.classList.add('btn-primary');
     }
@@ -253,11 +292,25 @@ async function loadUserData() {
     renderAgentPanel(userData);
   } catch (err) {
     console.error('[App] Error cargando datos de usuario:', err);
-    showToast('⚠️ Error al leer el contrato. ¿Está desplegado?', 'warning');
+    showToast(`⚠️ ${t('js.error')} Loading contract...`, 'warning');
   } finally {
     setLoading('user-data-container', false);
   }
 }
+
+// Escuchar cambios de idioma para re-renderizar
+window.addEventListener('languageChanged', () => {
+  if (appState.userData) {
+    renderUserPanel(appState.userData, appState.gmCost, appState.gmDoneToday);
+    renderGMButton(appState.userData, appState.gmCost, appState.gmDoneToday);
+    renderNodesStatus(appState.userData);
+    renderAgentPanel(appState.userData);
+    
+    if (appState.commitmentData) renderCommitmentData(appState.commitmentData);
+    if (appState.convictionData) renderConvictionData(appState.convictionData);
+    if (appState.legacyData) renderLegacyData(appState.legacyData);
+  }
+});
 
 // ─── Renderizar Panel del Usuario ──────────────────────────────────────────
 
@@ -274,39 +327,39 @@ function renderUserPanel(userData, gmCost, gmDoneToday) {
 
   const totalCostWei = gmCost.total;
   const costDisplay  = weiToUSDC(totalCostWei, 4);
-  const debtDisplay  = gmCost.debtCost > BigInt(0) ? `<span class="debt-warn">+ ${weiToUSDC(gmCost.debtCost, 4)} deuda</span>` : '';
+  const debtDisplay  = gmCost.debtCost > BigInt(0) ? `<span class="debt-warn">+ ${weiToUSDC(gmCost.debtCost, 4)} ${t('dashboard.debt')}</span>` : '';
 
   container.innerHTML = `
     <div class="user-stats-grid">
       <div class="stat-item">
-        <div class="stat-label">Estado</div>
+        <div class="stat-label">${t('dashboard.statStatus')}</div>
         <div class="stat-value">${forkLabel}</div>
       </div>
       <div class="stat-item">
-        <div class="stat-label">Racha Activa</div>
-        <div class="stat-value">🔥 ${streakDays} días</div>
+        <div class="stat-label">${t('dashboard.statStreak')}</div>
+        <div class="stat-value">🔥 ${streakDays}</div>
       </div>
       <div class="stat-item">
-        <div class="stat-label">Puntaje Total</div>
+        <div class="stat-label">${t('dashboard.statPoints')}</div>
         <div class="stat-value">⚡ ${userData.totalPoints.toLocaleString()} pts</div>
       </div>
       <div class="stat-item">
-        <div class="stat-label">GMs Realizados</div>
+        <div class="stat-label">${t('dashboard.statGms')}</div>
         <div class="stat-value">📡 ${userData.gmCount}</div>
       </div>
       <div class="stat-item">
-        <div class="stat-label">Costo GM Actual</div>
+        <div class="stat-label">${t('dashboard.statCost')}</div>
         <div class="stat-value">${costDisplay} ${debtDisplay}</div>
       </div>
       <div class="stat-item">
-        <div class="stat-label">Runestone</div>
-        <div class="stat-value">${runestone ? '🔮 Activo' : '○ Inactivo'}</div>
+        <div class="stat-label">${t('dashboard.statRunestone')}</div>
+        <div class="stat-value">${runestone ? `🔮 ${t('dashboard.active')}` : `○ ${t('dashboard.inactive')}`}</div>
       </div>
     </div>
     ${userData.forkLevel > 1 ? `
     <div class="fork-info">
-      <p>Estás en bifurcación <strong>B${userData.forkLevel}</strong>. Tu GM cuesta un poco más, pero activar nodos <strong>solo cuesta la tarifa base</strong>.</p>
-      <button id="btn-reset-vip" class="btn btn-secondary btn-small">Resetear a VIP</button>
+      <p>${t('dashboard.forkInfo', {fork: userData.forkLevel})}</p>
+      <button id="btn-reset-vip" class="btn btn-secondary btn-small">${t('dashboard.btnResetVip')}</button>
     </div>
     ` : ''}
   `;
@@ -325,17 +378,17 @@ function renderGMButton(userData, gmCost, gmDoneToday) {
   const isNewUser = !userData.exists;
 
   if (gmDoneToday) {
-    btn.textContent = '✅ GM Enviado Hoy';
+    btn.textContent = t('dashboard.btnGmDone');
     btn.disabled = true;
     btn.classList.remove('btn-runestone');
     btn.classList.add('btn-done');
   } else if (runestone) {
-    btn.textContent = '🔮 SUPER GM (Runestone)';
+    btn.textContent = t('dashboard.btnSuperGm');
     btn.disabled = false;
     btn.classList.add('btn-runestone');
     btn.classList.remove('btn-done');
   } else {
-    const label = isNewUser ? '📡 Enviar Primera Señal (GM)' : '📡 Enviar Señal (GM)';
+    const label = isNewUser ? t('dashboard.btnGmFirst') : t('dashboard.btnGmNormal');
     btn.textContent = label;
     btn.disabled = false;
     btn.classList.remove('btn-runestone', 'btn-done');
@@ -346,13 +399,13 @@ function renderGMButton(userData, gmCost, gmDoneToday) {
 
 async function handleGM() {
   const address = appState.address;
-  if (!address) { showToast('Conecta tu wallet primero.', 'warning'); return; }
+  if (!address) { showToast(t('js.connectFirst'), 'warning'); return; }
 
-  setButtonLoading('btn-gm', true, '⏳ Enviando señal...');
+  setButtonLoading('btn-gm', true, t('js.loading'));
 
   try {
     const receipt = await doGM(address);
-    showToast(`✅ ¡Señal enviada! TX: ${receipt.hash.slice(0, 10)}...`, 'success');
+    showToast(`✅ ${t('js.gmSent')} TX: ${receipt.hash.slice(0, 10)}...`, 'success');
 
     // Invalidar caché relevante
     Cache.invalidatePrefix(`ranking`);
@@ -388,8 +441,8 @@ function renderNodesStatus(userData) {
     const streakEl = document.getElementById(`node${node.id}-streak-needed`);
     if (streakEl) {
       streakEl.textContent = node.active
-        ? '✅ Activo'
-        : `Requiere racha día ${node.streak}`;
+        ? `✅ ${t('dashboard.active')}`
+        : t(`nodes.node${node.id}.req`);
     }
 
     const btnStreak = document.getElementById(`btn-node${node.id}-streak`);
@@ -408,7 +461,7 @@ function renderNodesStatus(userData) {
   const runestoneEl = document.getElementById('runestone-status');
   if (runestoneEl) {
     runestoneEl.className = `runestone-indicator ${runestone ? 'active' : ''}`;
-    runestoneEl.textContent = runestone ? '🔮 RUNESTONE ACTIVO — Super GM habilitado' : '○ Runestone inactivo — Activa los 3 nodos';
+    runestoneEl.textContent = runestone ? t('nodes.runestoneActive') : t('nodes.runestoneInactive');
   }
 }
 
@@ -419,7 +472,7 @@ async function loadNodesData() {
   if (!address) { showToast('Conecta tu wallet primero.', 'warning'); return; }
 
   const btn = document.getElementById('btn-load-nodes');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Cargando datos...'; }
+  if (btn) { btn.disabled = true; btn.textContent = `⏳ ${t('js.loading')}`; }
 
   // Nodo 1: Compromiso
   setLoading('node1-data', true, 'Analizando transacciones...');
@@ -448,19 +501,20 @@ async function loadNodesData() {
     console.error('[Nodes]', err);
     showToast(`❌ Error al cargar datos de nodos: ${err.message}`, 'error');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '🔄 Recargar Datos'; }
+    if (btn) { btn.disabled = false; btn.textContent = t('nodes.btnLoad'); }
   }
 }
 
 function renderCommitmentData(d) {
   const el = document.getElementById('node1-data');
   if (!el) return;
+  const labels = t('js.node1Data');
   el.innerHTML = `
     <div class="node-data-grid">
-      <div class="node-data-item"><span>Transacciones totales</span><strong>${d.totalTxs.toLocaleString()}</strong></div>
-      <div class="node-data-item"><span>Gas consumido</span><strong>${d.totalGasUsedFormatted}</strong></div>
-      <div class="node-data-item"><span>Fees pagadas</span><strong>${d.totalFeePaidFormatted} USDC</strong></div>
-      <div class="node-data-item"><span>Tier</span><strong>${d.tier.label} (×${d.tier.multiplier})</strong></div>
+      <div class="node-data-item"><span>${labels[0]}</span><strong>${d.totalTxs.toLocaleString()}</strong></div>
+      <div class="node-data-item"><span>${labels[1]}</span><strong>${d.totalGasUsedFormatted}</strong></div>
+      <div class="node-data-item"><span>${labels[2]}</span><strong>${d.totalFeePaidFormatted} USDC</strong></div>
+      <div class="node-data-item"><span>${labels[3]}</span><strong>${t(`js.commitmentTiers.${d.tier.index}`)} (×${d.tier.multiplier})</strong></div>
     </div>
   `;
 }
@@ -468,12 +522,13 @@ function renderCommitmentData(d) {
 function renderConvictionData(d) {
   const el = document.getElementById('node2-data');
   if (!el) return;
+  const labels = t('js.node2Data');
   el.innerHTML = `
     <div class="node-data-grid">
-      <div class="node-data-item"><span>Balance nativo</span><strong>${d.balanceUSDC} USDC</strong></div>
-      <div class="node-data-item"><span>% del supply</span><strong>${d.percentageOfSupply}%</strong></div>
-      <div class="node-data-item"><span>Supply total (ref.)</span><strong>${d.supplyTotal.toLocaleString()} USDC</strong></div>
-      <div class="node-data-item"><span>Clasificación</span><strong>${d.tier}</strong></div>
+      <div class="node-data-item"><span>${labels[0]}</span><strong>${d.balanceUSDC} USDC</strong></div>
+      <div class="node-data-item"><span>${labels[1]}</span><strong>${d.percentageOfSupply}%</strong></div>
+      <div class="node-data-item"><span>${labels[2]}</span><strong>${d.supplyTotal.toLocaleString()} USDC</strong></div>
+      <div class="node-data-item"><span>${labels[3]}</span><strong>${d.tier}</strong></div>
     </div>
   `;
 }
@@ -482,16 +537,17 @@ function renderLegacyData(d) {
   const el = document.getElementById('node3-data');
   if (!el) return;
   if (!d.firstTxTimestamp) {
-    el.innerHTML = '<p class="empty-text">No se encontraron transacciones en Arc Testnet.</p>';
+    el.innerHTML = `<p class="empty-text">${t('js.node3Empty')}</p>`;
     return;
   }
+  const labels = t('js.node3Data');
   el.innerHTML = `
     <div class="node-data-grid">
-      <div class="node-data-item"><span>Primera TX</span><strong>${d.firstTxTimestamp.toLocaleDateString('es-ES')}</strong></div>
-      <div class="node-data-item"><span>Última TX</span><strong>${d.lastTxTimestamp.toLocaleDateString('es-ES')}</strong></div>
-      <div class="node-data-item"><span>Días desde génesis</span><strong>${d.daysSinceGenesis}</strong></div>
-      <div class="node-data-item"><span>Rango activo</span><strong>${d.rangeDays} días</strong></div>
-      <div class="node-data-item span-2"><span>Insignia</span><strong>${d.badge.label} (×${d.badge.multiplier})</strong></div>
+      <div class="node-data-item"><span>${labels[0]}</span><strong>${d.firstTxTimestamp.toLocaleDateString(getLanguage())}</strong></div>
+      <div class="node-data-item"><span>${labels[1]}</span><strong>${d.lastTxTimestamp.toLocaleDateString(getLanguage())}</strong></div>
+      <div class="node-data-item"><span>${labels[2]}</span><strong>${d.daysSinceGenesis}</strong></div>
+      <div class="node-data-item"><span>${labels[3]}</span><strong>${d.rangeDays}</strong></div>
+      <div class="node-data-item span-2"><span>${labels[4]}</span><strong>${t(`js.legacyTiers.${d.badge.index}`)} (×${d.badge.multiplier})</strong></div>
     </div>
   `;
 }
@@ -574,60 +630,88 @@ async function handleResetVIP() {
 
 // ─── Panel de Agente (ERC-8004) ───────────────────────────────────────────
 
-function renderAgentPanel(userData) {
+async function renderAgentPanel(userData) {
   const container = document.getElementById('agent-ui-container');
   if (!container) return;
 
   const runestone = userData.nodeCommitment && userData.nodeConviction && userData.nodeLegacy;
 
   if (!runestone) {
-    container.innerHTML = `<p class="empty-text">❌ Debes activar el Runestone (3 nodos) para interactuar con agentes de IA.</p>`;
+    container.innerHTML = `<p class="empty-text">${t('dashboard.agentReqRunestone')}</p>`;
     return;
   }
 
   if (userData.attachedAgentId > 0) {
     container.innerHTML = `
       <div class="stat-item" style="border: 1px solid var(--color-border); padding: 12px; border-radius: 8px; margin-top: 8px; background: rgba(0,0,0,0.2);">
-        <div class="stat-label">Agente Vinculado</div>
+        <div class="stat-label">${t('dashboard.agentTitle')}</div>
         <div class="stat-value" style="color: var(--color-runestone);">
           🤖 ID: ${userData.attachedAgentId}
         </div>
         <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 8px;">
-          Tu Agente de IA está activo y conectado a tu perfil en Signal 0xL.
+          ${t('dashboard.agentActiveDesc')}
         </p>
       </div>
     `;
-  } else {
-    container.innerHTML = `
-      <p style="font-size: 0.85rem; margin-bottom: 8px; color: var(--color-text-muted);">
-        ¡Runestone activado! Tienes permiso para vincular tu Agente. Asegúrate de haberlo registrado primero en el <a href="https://testnet.arcscan.app/address/0x8004A818BFB912233c491871b3d84c89A494BD9e" target="_blank" style="color: var(--color-primary);">IdentityRegistry de Arc</a>.
-      </p>
-      <div style="display: flex; gap: 8px; margin-top: 12px;">
-        <input type="number" id="input-agent-id" class="input-base" placeholder="Agent ID (ej. 12)" style="flex: 1;" />
-        <button id="btn-attach-agent" class="btn btn-primary">Vincular Agente</button>
-      </div>
-    `;
-    
-    // Bind event
-    document.getElementById('btn-attach-agent')?.addEventListener('click', async () => {
-      const input = document.getElementById('input-agent-id');
-      const agentId = parseInt(input.value);
-      if (isNaN(agentId) || agentId <= 0) {
-        showToast('ID de Agente inválido.', 'warning');
-        return;
-      }
-      setButtonLoading('btn-attach-agent', true, 'Vinculando...');
-      try {
-        const tx = await attachAgent(agentId);
-        showToast(`✅ Agente ${agentId} vinculado! TX: ${tx.hash.slice(0, 10)}...`, 'success');
-        await loadUserData();
-      } catch (err) {
-        showToast(`❌ ${parseContractError(err)}`, 'error');
-        console.error('[Agent]', err);
-      } finally {
-        setButtonLoading('btn-attach-agent', false, 'Vincular Agente');
-      }
-    });
+    return;
+  }
+
+  // Estado: Runestone activo pero sin agente. Buscamos agentes en la blockchain.
+  container.innerHTML = `<p class="loading-text" style="font-size: 0.85rem; margin-top: 12px;">${t('dashboard.agentSearching')}</p>`;
+  
+  try {
+    const userAgents = await fetchUserAgents(appState.address);
+
+    if (userAgents.length === 0) {
+      container.innerHTML = `
+        <p style="font-size: 0.85rem; margin-bottom: 8px; color: var(--color-text-muted);">
+          ${t('dashboard.agentPermission')}
+        </p>
+        <div style="margin-top: 12px; padding: 12px; background: rgba(255,100,100,0.1); border-left: 3px solid var(--color-error); border-radius: 4px;">
+          <p style="font-size: 0.85rem; color: var(--color-text);">${t('dashboard.agentNoneFound')}</p>
+          <a href="https://testnet.arcscan.app/address/0x8004A818BFB912233c491871b3d84c89A494BD9e" target="_blank" class="btn btn-secondary btn-small" style="margin-top: 8px; display: inline-block;">${t('dashboard.agentRegisterBtn')}</a>
+        </div>
+      `;
+    } else {
+      let options = userAgents.map(id => `<option value="${id.toString()}">${t('dashboard.agentOption', { id: id.toString() })}</option>`).join('');
+      container.innerHTML = `
+        <p style="font-size: 0.85rem; margin-bottom: 8px; color: var(--color-text-muted);">
+          ${t('dashboard.agentPermission')}
+        </p>
+        <div style="display: flex; gap: 8px; margin-top: 12px;">
+          <select id="input-agent-id" class="input-base" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid var(--color-border); background: var(--color-bg); color: var(--color-text);">
+            <option value="" disabled selected>${t('dashboard.agentSelectPlaceholder')}</option>
+            ${options}
+          </select>
+          <button id="btn-attach-agent" class="btn btn-primary">${t('js.attachAgentBtn') || 'Vincular Agente'}</button>
+        </div>
+      `;
+
+      // Bind event
+      document.getElementById('btn-attach-agent')?.addEventListener('click', async () => {
+        const select = document.getElementById('input-agent-id');
+        const agentIdStr = select.value;
+        if (!agentIdStr) {
+          showToast(t('dashboard.agentSelectWarning'), 'warning');
+          return;
+        }
+        setButtonLoading('btn-attach-agent', true, t('dashboard.agentAttaching'));
+        try {
+          const agentId = BigInt(agentIdStr);
+          const tx = await attachAgent(agentId);
+          showToast(`✅ Agente ${agentId.toString()} vinculado! TX: ${tx.hash.slice(0, 10)}...`, 'success');
+          await loadUserData();
+        } catch (err) {
+          showToast(`❌ ${parseContractError(err)}`, 'error');
+          console.error('[Agent]', err);
+        } finally {
+          setButtonLoading('btn-attach-agent', false, 'Vincular Agente');
+        }
+      });
+    }
+  } catch (error) {
+    console.error("Error renderizando dropdown de agentes:", error);
+    container.innerHTML = `<p class="empty-text">${t('dashboard.agentSearchError')}</p>`;
   }
 }
 

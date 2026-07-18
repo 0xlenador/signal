@@ -224,10 +224,7 @@
       </div>
 
       <div style="margin-top: 12px; text-align: right;">
-        <button
-          class="btn btn-secondary btn-small"
-          data-i18n="ranking.updateBtn"
-          onclick="document.getElementById('ranking-container').innerHTML='<p class=loading-text>Recargando...</p>'; import('./js/ranking.js').then(m=>m.renderRanking('ranking-container', null))">
+        <button id="btn-refresh-ranking" class="btn btn-secondary btn-small" data-i18n="ranking.updateBtn">
           🔄 Actualizar
         </button>
       </div>

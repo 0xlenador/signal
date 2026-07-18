@@ -26,14 +26,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/0xlenador/signal.git"
+    "url": "git+https://github.com/0xlenador/signal-0xl.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "bugs": {
-    "url": "https://github.com/0xlenador/signal/issues"
+    "url": "https://github.com/0xlenador/signal-0xl/issues"
   },
-  "homepage": "https://github.com/0xlenador/signal#readme"
+  "homepage": "https://github.com/0xlenador/signal-0xl#readme"
 }

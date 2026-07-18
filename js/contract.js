@@ -6,6 +6,7 @@
 
 import { CONTRACT_ADDRESS, CONTRACT_ABI, CONSTANTS } from './config.js';
 import { getSigner, getProvider } from './wallet.js';
+import { fetchUserTokens } from './blockscout.js';
 import { ethers } from 'ethers';
 
 let _contract = null;
@@ -312,55 +313,20 @@ export function weiToUSDC(wei, dp = 4) {
  * @returns {Promise<bigint[]>} - Array de IDs de Agentes (como BigInt)
  */
 export async function fetchUserAgents(address) {
-  const provider = getProvider();
-  const registryAddr = "0x8004A818BFB912233c491871b3d84c89A494BD9e";
-  
-  // Topic 0 para Transfer(address,address,uint256)
-  const transferTopic = ethers.id("Transfer(address,address,uint256)");
-  const paddedAddress = ethers.zeroPadValue(address, 32);
-
   try {
-    // Buscamos todos los logs donde la wallet haya sido el destino (Topic 2 en ERC721)
-    const logs = await provider.getLogs({
-      address: registryAddr,
-      fromBlock: 0,
-      toBlock: "latest",
-      topics: [transferTopic, null, paddedAddress]
-    });
-
-    // Extraemos los Token IDs (están en el topic 3 de un Transfer ERC721)
-    const potentialIds = new Set();
-    for (const log of logs) {
-      if (log.topics.length === 4) {
-        potentialIds.add(BigInt(log.topics[3]));
-      }
-    }
-
-    if (potentialIds.size === 0) return [];
-
-    // Verificamos cuáles de estos IDs todavía le pertenecen al usuario consultando ownerOf
-    const abi = ["function ownerOf(uint256) view returns (address)"];
-    const registry = new ethers.Contract(registryAddr, abi, provider);
+    const registryAddr = "0x8004A818BFB912233c491871b3d84c89A494BD9e".toLowerCase();
+    const tokens = await fetchUserTokens(address);
     
-    const ownedIds = [];
-    // Promise.all para paralelizarlas si son varias, aunque en Testnet solemos usar secuencial,
-    // pero como son pocas IDs, no debería alcanzar el límite tan rápido.
-    for (const id of potentialIds) {
-      try {
-        const owner = await registry.ownerOf(id);
-        if (owner.toLowerCase() === address.toLowerCase()) {
-          ownedIds.push(id);
-        }
-      } catch {
-        // Ignorar IDs quemados o errores
-      }
-      // Pequeña pausa para no triggerear el rate limit de Arc
-      await new Promise(r => setTimeout(r, 200));
-    }
-
-    return ownedIds.sort((a, b) => (a < b ? -1 : 1));
+    // Filtramos los tokens que pertenecen al contrato IdentityRegistry
+    const agentTokens = tokens.filter(t => t.token?.address?.toLowerCase() === registryAddr);
+    
+    if (agentTokens.length === 0) return [];
+    
+    // Extraemos los IDs, los parseamos a BigInt y ordenamos
+    const ownedIds = agentTokens.map(t => BigInt(t.id)).sort((a, b) => (a < b ? -1 : 1));
+    return ownedIds;
   } catch (err) {
     console.error("[fetchUserAgents] Error buscando agentes:", err);
-    return []; // Retorna vacío si falla el nodo
+    return []; // Retorna vacío si falla la API
   }
 }

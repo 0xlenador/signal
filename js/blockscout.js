@@ -206,6 +206,21 @@ export async function fetchFirstAndLastTx(address) {
   };
 }
 
+/**
+ * Obtiene todos los tokens (ERC20/ERC721/ERC1155) de una dirección.
+ * @param {string} address
+ * @returns {Promise<Array<Object>>}
+ */
+export async function fetchUserTokens(address) {
+  try {
+    const data = await apiGet(`/addresses/${address}/tokens`);
+    return data.items || [];
+  } catch (err) {
+    console.error("[fetchUserTokens] Error obteniendo tokens:", err);
+    return [];
+  }
+}
+
 // ─── Helpers internos ──────────────────────────────────────────────────────
 
 /** Normaliza una TX de la API a un objeto uniforme. */

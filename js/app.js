@@ -165,6 +165,14 @@ function setupGlobalButtons() {
   // Botón cargar datos de nodos
   document.getElementById('btn-load-nodes')?.addEventListener('click', loadNodesData);
 
+  // Botón refrescar ranking
+  document.getElementById('btn-refresh-ranking')?.addEventListener('click', async () => {
+    const container = document.getElementById('ranking-container');
+    if (container) container.innerHTML = `<p class="loading-text">${t('js.loading')}</p>`;
+    Cache.invalidatePrefix('ranking');
+    await renderRanking('ranking-container', appState.address, appState.userData);
+  });
+
   // Botones de App Kit (Unified Balance)
   document.getElementById('btn-fund-base')?.addEventListener('click', async () => {
     setButtonLoading('btn-fund-base', true, '⌛');

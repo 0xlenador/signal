@@ -614,3 +614,15 @@ a:hover { text-decoration: underline; }
   .node-actions .btn { width: 100%; }
   .fork-info { flex-direction: column; }
 }
+
+/* Obfuscation for inactive nodes */
+.obfuscated-value {
+  color: var(--text-muted);
+  filter: blur(4px);
+  user-select: none;
+  opacity: 0.7;
+  transition: filter 0.3s ease;
+}
+.node-data-item:hover .obfuscated-value {
+  filter: blur(2px);
+}

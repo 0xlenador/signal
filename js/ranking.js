@@ -4,39 +4,48 @@
  * Fuente de datos: contrato on-chain (getTopUsers).
  */
 
-import { getUserCount } from './contract.js';
+import { getUserCount, getTopUsersFallback } from './contract.js';
 import { Cache } from './cache.js';
 import { CONSTANTS } from './config.js';
 import { t } from './i18n.js';
 
 const { CACHE_TTL } = CONSTANTS;
 
+let lastSuccessfulRanking = null;
+
 export async function fetchRanking() {
   const cacheKey = `ranking_cf`;
   const cached = Cache.get(cacheKey);
   if (cached) return cached;
 
-  // Obtenemos el total registrado on-chain
-  const total = await getUserCount();
+  let total = 0;
   let users = [];
 
   try {
-    // 1. Descargamos la lista estática superrápida desde Cloudflare (max 1h antigüedad)
-    const WORKER_URL = 'https://signal0xl-ranking.ellenador-eth.workers.dev'; 
-    const response = await fetch(WORKER_URL);
-    if (response.ok) {
-      users = await response.json();
-    } else {
-      console.warn("Worker no disponible, usando arreglo vacío por ahora.");
+    try {
+      total = Number(await getUserCount());
+    } catch (e) {
+      console.warn("Fallo getUserCount, usando fallback de Arcscan...", e);
+      total = 1; // Forzar para pasar al fallback de Arcscan
     }
-  } catch (error) {
-    console.warn("No se pudo contactar al Cloudflare Worker:", error);
-  }
 
-  const result = { users, total };
-  // Guardamos en caché local (1 minuto) para no re-descargar de CF a cada click
-  Cache.set(cacheKey, result, 60); 
-  return result;
+    if (total > 0) {
+      console.log("Activando fallback on-chain para obtener el ranking desde Arcscan...");
+      users = await getTopUsersFallback(total);
+    }
+
+    const result = { users, total: users.length || total };
+    Cache.set(cacheKey, result, 60); 
+    lastSuccessfulRanking = result; // Guardar copia persistente
+    return result;
+  } catch (error) {
+    console.error("fetchRanking fallo:", error);
+    if (lastSuccessfulRanking) {
+      console.warn("Sirviendo copia cacheada persistente del ranking tras fallo RPC.");
+      return lastSuccessfulRanking;
+    }
+    throw error;
+  }
 }
 
 /**
@@ -48,7 +57,10 @@ export async function renderRanking(containerId, currentAddress = null, currentU
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  container.innerHTML = `<p class="loading-text">${t('ranking.loading')}</p>`;
+  // Evitar parpadeo si ya hay una tabla renderizada (util para el auto-refresh)
+  if (!container.querySelector('.ranking-table')) {
+    container.innerHTML = `<p class="loading-text">${t('ranking.loading')}</p>`;
+  }
 
   try {
     const { users, total } = await fetchRanking();

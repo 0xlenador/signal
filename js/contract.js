@@ -4,16 +4,32 @@
  * Provee funciones de lectura (view) y escritura (payable) con manejo de errores.
  */
 
-import { CONTRACT_ADDRESS, CONTRACT_ABI, CONSTANTS } from './config.js';
+import { CONTRACT_ADDRESS, CONTRACT_ABI, CONSTANTS, NETWORK } from './config.js';
 import { getSigner, getProvider } from './wallet.js';
 import { fetchUserTokens } from './blockscout.js';
 import { ethers } from 'ethers';
+
+// Caching provider con static network para evitar llamadas auto-detect eth_chainId y rate limits
+const staticNetwork = ethers.Network.from({
+  chainId: NETWORK.chainId,
+  name: NETWORK.name
+});
+
+let _publicProvider = null;
+function getPublicProvider() {
+  if (!_publicProvider) {
+    _publicProvider = new ethers.JsonRpcProvider(NETWORK.rpcUrls[0], staticNetwork, {
+      staticNetwork: staticNetwork
+    });
+  }
+  return _publicProvider;
+}
 
 let _contract = null;
 let _readContract = null;
 
 /** Inicializa el contrato con signer (lectura + escritura). */
-function getWriteContract() {
+export function getWriteContract() {
   if (_contract) return _contract;
   _contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, getSigner());
   return _contract;
@@ -22,7 +38,7 @@ function getWriteContract() {
 /** Inicializa el contrato solo con provider (lectura, sin wallet). */
 function getReadContract() {
   if (_readContract) return _readContract;
-  _readContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, getProvider());
+  _readContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, getPublicProvider());
   return _readContract;
 }
 
@@ -82,6 +98,54 @@ export async function getUserData(address) {
       nodeLegacy:     raw.nodeLegacy,
       exists:         raw.exists,
       attachedAgentId: Number(raw.attachedAgentId),
+    };
+  });
+}
+
+/**
+ * Carga todos los datos del dashboard de usuario (UserData, GMCost y hasGMToday)
+ * en una sola peticion RPC utilizando Multicall3.
+ */
+export async function loadUserDashboardData(address) {
+  return withRetry(async () => {
+    const MULTICALL3_ADDRESS = '0xcA11bde05977b3631167028862bE2a173976CA11';
+    const multicallAbi = ["function tryAggregate(bool requireSuccess, tuple(address target, bytes callData)[] calls) public view returns (tuple(bool success, bytes returnData)[] returnData)"];
+    
+    const publicProvider = getPublicProvider();
+    const multicall = new ethers.Contract(MULTICALL3_ADDRESS, multicallAbi, publicProvider);
+    const iface = new ethers.Interface(CONTRACT_ABI);
+
+    const calls = [
+      { target: CONTRACT_ADDRESS, callData: iface.encodeFunctionData('getUserData', [address]) },
+      { target: CONTRACT_ADDRESS, callData: iface.encodeFunctionData('getGMCost', [address]) },
+      { target: CONTRACT_ADDRESS, callData: iface.encodeFunctionData('hasGMToday', [address]) }
+    ];
+
+    const results = await multicall.tryAggregate(true, calls);
+
+    const userDataRaw = iface.decodeFunctionResult('getUserData', results[0].returnData);
+    const gmCostRaw = iface.decodeFunctionResult('getGMCost', results[1].returnData);
+    const hasGMTodayRaw = iface.decodeFunctionResult('hasGMToday', results[2].returnData)[0];
+
+    return {
+      userData: {
+        totalPoints:    Number(userDataRaw.totalPoints),
+        lastGmDay:      Number(userDataRaw.lastGmDay),
+        currentStreak:  Number(userDataRaw.currentStreak),
+        forkLevel:      Number(userDataRaw.forkLevel) === 0 ? 1 : Number(userDataRaw.forkLevel),
+        gmCount:        Number(userDataRaw.gmCount),
+        nodeCommitment: userDataRaw.nodeCommitment,
+        nodeConviction: userDataRaw.nodeConviction,
+        nodeLegacy:     userDataRaw.nodeLegacy,
+        exists:         userDataRaw.exists,
+        attachedAgentId: Number(userDataRaw.attachedAgentId),
+      },
+      gmCost: {
+        gmCost: gmCostRaw.gmCost,
+        debtCost: gmCostRaw.debtCost,
+        total: gmCostRaw.gmCost + gmCostRaw.debtCost
+      },
+      gmDoneToday: hasGMTodayRaw
     };
   });
 }
@@ -170,7 +234,58 @@ export async function getDaysSinceLastGM(address) {
   return Number(await contract.getDaysSinceLastGM(address));
 }
 
-// getTopUsers fue movido a la lógica del Cloudflare Worker para escalabilidad
+// getTopUsers fue movido a la lógica del Cloudflare Worker para escalabilidad, 
+// pero mantenemos un fallback on-chain por si el worker falla.
+export async function getTopUsersFallback(total) {
+  if (!total || total === 0) return [];
+
+  const usersData = [];
+  try {
+    // 1. Obtenemos direcciones unicas desde Arcscan API
+    const res = await fetch(`https://testnet.arcscan.app/api/v2/addresses/${CONTRACT_ADDRESS}/transactions`);
+    if (!res.ok) throw new Error("Arcscan API fallo");
+    const data = await res.json();
+    const addrs = [...new Set(data.items.map(t => t.from.hash))].slice(0, 100); // Limite seguro 100
+    
+    // 2. Usamos Multicall3 nativo de Arc Testnet para leer a todos de un solo golpe
+    const MULTICALL3_ADDRESS = '0xcA11bde05977b3631167028862bE2a173976CA11';
+    const multicallAbi = ["function tryAggregate(bool requireSuccess, tuple(address target, bytes callData)[] calls) public view returns (tuple(bool success, bytes returnData)[] returnData)"];
+    
+    const publicProvider = getPublicProvider();
+    const multicall = new ethers.Contract(MULTICALL3_ADDRESS, multicallAbi, publicProvider);
+    
+    const iface = new ethers.Interface(CONTRACT_ABI);
+    
+    // Preparamos las llamadas
+    const calls = addrs.map(addr => ({
+      target: CONTRACT_ADDRESS,
+      callData: iface.encodeFunctionData('getUserData', [addr])
+    }));
+
+    // 3. 1 sola peticion RPC para todas las wallets
+    const results = await multicall.tryAggregate(false, calls);
+
+    // 4. Decodificamos
+    results.forEach((result, i) => {
+      if (result.success && result.returnData !== '0x') {
+        const decoded = iface.decodeFunctionResult('getUserData', result.returnData);
+        const exists = decoded.exists;
+        if (exists) {
+          usersData.push({
+            address: addrs[i],
+            points: Number(decoded.totalPoints),
+            forkLevel: Number(decoded.forkLevel) === 0 ? 1 : Number(decoded.forkLevel),
+          });
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error("Fallback Multicall fallo:", error);
+  }
+  
+  return usersData.sort((a, b) => b.points - a.points);
+}
 
 /**
  * Retorna el baseGMCost del contrato en wei.

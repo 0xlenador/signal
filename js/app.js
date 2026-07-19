@@ -13,7 +13,7 @@ import {
   getUserData, getGMCost, getNodeInstantCost, canActivateByStreak,
   hasGMToday, hasRunestone, doGM, activateNodeInstant, activateNodeByStreak,
   resetToVIP, parseContractError, weiToUSDC, resetContract, attachAgent,
-  fetchUserAgents
+  fetchUserAgents, loadUserDashboardData
 } from './contract.js';
 import {
   calculateCommitmentNode, calculateConvictionNode, calculateLegacyNode
@@ -52,6 +52,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Inicializar panel de red siempre (no requiere wallet)
   initNetworkPanel('network-container');
+
+  // Auto-refresh del ranking cada 30 segundos en background
+  setInterval(() => {
+    // Solo recargar si la pestaña de ranking esta visible o si queremos que este fresco cuando entren
+    Cache.invalidatePrefix('ranking_cf');
+    renderRanking('ranking-container', appState.address, appState.userData);
+  }, 30000);
 });
 
 // ─── Reconexión silenciosa ─────────────────────────────────────────────────
@@ -165,13 +172,7 @@ function setupGlobalButtons() {
   // Botón cargar datos de nodos
   document.getElementById('btn-load-nodes')?.addEventListener('click', loadNodesData);
 
-  // Botón refrescar ranking
-  document.getElementById('btn-refresh-ranking')?.addEventListener('click', async () => {
-    const container = document.getElementById('ranking-container');
-    if (container) container.innerHTML = `<p class="loading-text">${t('js.loading')}</p>`;
-    Cache.invalidatePrefix('ranking');
-    await renderRanking('ranking-container', appState.address, appState.userData);
-  });
+
 
   // Botones de App Kit (Unified Balance)
   document.getElementById('btn-fund-base')?.addEventListener('click', async () => {
@@ -282,13 +283,8 @@ async function loadUserData() {
   setLoading('user-data-container', true);
 
   try {
-    // El RPC de Arc Testnet tiene un rate limit muy estricto (~1 req/sec).
-    // Usamos llamadas secuenciales con delay para evitar el error -32011 (request limit reached).
-    const userData = await getUserData(address);
-    await new Promise(r => setTimeout(r, 600));
-    const gmCost = await getGMCost(address);
-    await new Promise(r => setTimeout(r, 600));
-    const gmDoneToday = await hasGMToday(address);
+    // ALTA INGENIERIA: 1 sola llamada Multicall3 para todos los datos del dashboard
+    const { userData, gmCost, gmDoneToday } = await loadUserDashboardData(address);
 
     appState.userData    = userData;
     appState.gmCost      = gmCost;

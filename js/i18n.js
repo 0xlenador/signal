@@ -7,6 +7,9 @@ export const locales = {
       network: '🌐 Network',
     },
     header: {
+      preferences: 'Preferences',
+      language: 'Language',
+      back: 'Back',
       connect: '🔗 Connect',
       disconnect: 'Disconnect'
     },
@@ -18,9 +21,9 @@ export const locales = {
     },
     dashboard: {
       yourSignal: '👤 Your Signal',
-      loadingContract: 'Loading contract data...',
+      loadingContract: 'Loading data...',
       dailyGmTitle: '📡 Daily Signal',
-      dailyGmDesc: 'Send your daily signal to Arc Testnet. The window is 00:00–23:59 UTC. Each GM grants +1 point (or +2 with active Runestone).',
+      dailyGmDesc: 'Send your daily signal to Arc Testnet. Window: 00:00–23:59 UTC. +1 point (+2 with Runestone).',
       btnGmDisabled: '🔗 Connect your wallet to start',
       btnGmActive: '🚀 Send Signal (GM)',
       btnGmDone: '✅ GM Sent Today',
@@ -33,13 +36,16 @@ export const locales = {
       btnFundArb: 'Deposit from Arb (Coming Soon)',
       btnBridgeArc: 'Bring funds to Arc (Coming Soon)',
       agentTitle: '🤖 AI Agent (ERC-8004)',
-      agentDesc: 'Upon activating your Runestone (3 nodes), you can attach an AI Agent (registered in IdentityRegistry) to prove your adoption of the Arc Agentic Economy.',
-      agentEmpty: 'Connect your wallet and activate the Runestone to manage your agent.',
+      agentDesc: 'Autonomous ERC-8004 agent.',
+      agentEmpty: 'Inactive',
+      liveSignals: 'Live Signals',
+      online: 'Online',
+      networkDesc: 'Real-time status of Arc Testnet network consumed via Blockscout API.',
+      syncing: 'Syncing with Arc Testnet...',
       statStatus: 'Status',
       statStreak: 'Streak',
       statPoints: 'Score',
       statGms: 'GMs Sent',
-      loadingContract: 'Loading data...',
       active: 'Active',
       inactive: 'Inactive',
       debt: 'debt',
@@ -56,6 +62,11 @@ export const locales = {
       agentSelectWarning: 'Select an Agent from the list.',
       agentAttaching: 'Attaching...',
       agentSearchError: '❌ Error searching for agents on the network.'
+    },
+    runestone: {
+      nodeCommitment: 'COMMITMENT',
+      nodeConviction: 'CONVICTION',
+      nodeLegacy: 'LEGACY'
     },
     nodes: {
       title: '🔬 Analysis Nodes',
@@ -161,6 +172,9 @@ export const locales = {
       network: '🌐 Red',
     },
     header: {
+      preferences: 'Preferencias',
+      language: 'Idioma',
+      back: 'Volver',
       connect: '🔗 Conectar',
       disconnect: 'Cerrar Sesión'
     },
@@ -172,9 +186,9 @@ export const locales = {
     },
     dashboard: {
       yourSignal: '👤 Tu Señal',
-      loadingContract: 'Cargando datos del contrato...',
+      loadingContract: 'Cargando datos...',
       dailyGmTitle: '📡 Señal Diaria',
-      dailyGmDesc: 'Envía tu señal diaria a Arc Testnet. La ventana es 00:00–23:59 UTC. Cada GM suma +1 punto <strong class="text-accent-runestone">(+2 pts per GM con Runestone activo)</strong>.',
+      dailyGmDesc: 'Envía tu señal diaria a Arc Testnet. Ventana: 00:00–23:59 UTC. +1 punto (+2 con Runestone).',
       btnGmDisabled: '🔗 Conecta tu wallet para empezar',
       btnGmActive: '🚀 Enviar Señal (GM)',
       btnGmDone: '✅ GM Enviado Hoy',

@@ -275,6 +275,9 @@ export async function getTopUsersFallback(total) {
             address: addrs[i],
             points: Number(decoded.totalPoints),
             forkLevel: Number(decoded.forkLevel) === 0 ? 1 : Number(decoded.forkLevel),
+            nodeCommitment: decoded.nodeCommitment,
+            nodeConviction: decoded.nodeConviction,
+            nodeLegacy: decoded.nodeLegacy,
           });
         }
       }

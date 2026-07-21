@@ -60,27 +60,27 @@ export const locales = {
     nodes: {
       title: '🔬 Analysis Nodes',
       runestoneInactive: '○ Runestone inactive — Activate all 3 nodes',
-      runestoneActive: '🔥 RUNESTONE ACTIVE 🔥 (+2 pts per GM)',
+      runestoneActive: '<i data-lucide="flame" class="inline w-3.5 h-3.5 text-[#ff6600]"></i> RUNESTONE ACTIVE <i data-lucide="flame" class="inline w-3.5 h-3.5 text-[#ff6600]"></i>',
       node1: {
         title: 'Node 1 — Commitment',
         desc: 'Analyzes historical transaction volume and gas spent on Arc Testnet. Calculates your activity tier and score multiplier.',
         req: 'Requires day 3 streak',
-        instantBtn: '⚡ Instant Activation (0.51 USDC)',
-        streakBtn: '🔥 Activate via Streak'
+        instantBtn: 'Instant Activation<br>(0.51 USDC)',
+        streakBtn: 'Activate via Streak'
       },
       node2: {
         title: 'Node 2 — Conviction',
         desc: 'Calculates the percentage of the total native USDC supply held in your wallet. Measures your economic weight on the network.',
         req: 'Requires day 12 streak',
-        instantBtn: '⚡ Instant Activation (1.26 USDC)',
-        streakBtn: '🔥 Activate via Streak'
+        instantBtn: 'Instant Activation<br>(1.26 USDC)',
+        streakBtn: 'Activate via Streak'
       },
       node3: {
         title: 'Node 3 — Legacy',
         desc: 'Analyzes the timestamp of your first and last transaction on Arc Testnet. The older you are on the network, the higher your legacy multiplier.',
         req: 'Requires day 25 streak',
-        instantBtn: '⚡ Instant Activation (5.01 USDC)',
-        streakBtn: '🔥 Activate via Streak'
+        instantBtn: 'Instant Activation<br>(5.01 USDC)',
+        streakBtn: 'Activate via Streak'
       },
       btnLoad: '📊 Load Node Data (from Blockscout)',
       loadWarning: 'Consumes ~60 API credits. Results cached for 1 hour.',
@@ -174,7 +174,7 @@ export const locales = {
       yourSignal: '👤 Tu Señal',
       loadingContract: 'Cargando datos del contrato...',
       dailyGmTitle: '📡 Señal Diaria',
-      dailyGmDesc: 'Envía tu señal diaria a Arc Testnet. La ventana es 00:00–23:59 UTC. Cada GM suma +1 punto (o +2 con Runestone activo).',
+      dailyGmDesc: 'Envía tu señal diaria a Arc Testnet. La ventana es 00:00–23:59 UTC. Cada GM suma +1 punto <strong class="text-accent-runestone">(+2 pts per GM con Runestone activo)</strong>.',
       btnGmDisabled: '🔗 Conecta tu wallet para empezar',
       btnGmActive: '🚀 Enviar Señal (GM)',
       btnGmDone: '✅ GM Enviado Hoy',
@@ -214,27 +214,27 @@ export const locales = {
     nodes: {
       title: '🔬 Nodos de Análisis',
       runestoneInactive: '○ Runestone inactivo — Activa los 3 nodos',
-      runestoneActive: '🔥 RUNESTONE ACTIVO 🔥 (+2 pts por GM)',
+      runestoneActive: '<i data-lucide="flame" class="inline w-3.5 h-3.5 text-[#ff6600]"></i> RUNESTONE ACTIVO <i data-lucide="flame" class="inline w-3.5 h-3.5 text-[#ff6600]"></i>',
       node1: {
         title: 'Nodo 1 — Compromiso',
         desc: 'Analiza el volumen histórico de transacciones y gas consumido en Arc Testnet. Calcula tu tier de actividad y su multiplicador de puntaje.',
         req: 'Requiere racha día 3',
-        instantBtn: '⚡ Activar Ahora (0.51 USDC)',
-        streakBtn: '🔥 Activar por Racha'
+        instantBtn: 'Activación Instantánea<br>(0.51 USDC)',
+        streakBtn: 'Activar por Racha'
       },
       node2: {
         title: 'Nodo 2 — Convicción',
         desc: 'Calcula el porcentaje del supply total de USDC nativo que posee tu wallet. Mide tu peso económico en la red.',
         req: 'Requiere racha día 12',
-        instantBtn: '⚡ Activar Ahora (1.26 USDC)',
-        streakBtn: '🔥 Activar por Racha'
+        instantBtn: 'Activación Instantánea<br>(1.26 USDC)',
+        streakBtn: 'Activar por Racha'
       },
       node3: {
         title: 'Nodo 3 — Legado',
         desc: 'Analiza el timestamp de tu primera y última transacción en Arc Testnet. Cuanto más antiguo seas en la red, mayor será tu multiplicador de legado.',
         req: 'Requiere racha día 25',
-        instantBtn: '⚡ Activar Ahora (5.01 USDC)',
-        streakBtn: '🔥 Activar por Racha'
+        instantBtn: 'Activación Instantánea<br>(5.01 USDC)',
+        streakBtn: 'Activar por Racha'
       },
       btnLoad: '📊 Cargar Datos de Nodos (desde Blockscout)',
       loadWarning: 'Consume ~60 créditos API. Resultado se cachea 1 hora.',

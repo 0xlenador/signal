@@ -23,6 +23,13 @@ import { initNetworkPanel, stopPolling, renderNetworkStats } from './network.js'
 import { Cache } from './cache.js';
 import { initAppKit, depositFromBase, depositFromArb, spendToArc } from './app-kit.js';
 import { initI18n, setLanguage, getLanguage, t } from './i18n.js';
+import { createIcons, icons } from 'lucide';
+
+// Inyectar icono de Github manualmente (removido de las versiones recientes de lucide)
+icons.Github = [
+  ["path", { "d": "M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" }],
+  ["path", { "d": "M9 18c-4.51 2-5-2-7-2" }]
+];
 
 // ─── Estado global de la UI ───────────────────────────────────────────────
 
@@ -39,6 +46,7 @@ let appState = {
 // ─── Init ─────────────────────────────────────────────────────────────────
 
 window.addEventListener('DOMContentLoaded', () => {
+  createIcons({ icons });
   initI18n();
   setupWalletListeners();
   setupGlobalButtons();
@@ -358,27 +366,27 @@ function renderUserPanel(userData, gmCost, gmDoneToday) {
   }
 
   const forkLabel = userData.forkLevel <= 1
-    ? '<span class="px-3 py-1 bg-surface-2 rounded-full text-[0.65rem] font-bold uppercase text-[#a78bfa] border border-[#a78bfa]/30 shadow-[0_0_10px_rgba(167,139,250,0.15)] flex items-center gap-1"><span>👑</span> VIP</span>'
-    : `<span class="badge badge-fork">⚡ B${userData.forkLevel}</span>`;
+    ? '<span class="px-3 py-1 bg-surface-2 rounded-full text-[0.65rem] font-bold uppercase text-[#a78bfa] border border-[#a78bfa]/30 shadow-[0_0_10px_rgba(167,139,250,0.15)] flex items-center gap-1"><i data-lucide="crown" class="w-4 h-4"></i> VIP</span>'
+    : `<span class="badge badge-fork flex items-center gap-1"><i data-lucide="zap" class="w-3.5 h-3.5"></i> B${userData.forkLevel}</span>`;
 
   const streakDays = userData.currentStreak;
 
   container.innerHTML = `
     <div class="grid grid-cols-4 gap-2">
       <div class="flex flex-col items-center bg-surface-1 hover:bg-surface-2 transition-colors py-3 px-2 rounded-xl border border-border-light justify-center shadow-sm hover:shadow-glow-cyan">
-        <div class="text-[0.55rem] text-text-muted font-semibold uppercase tracking-wider mb-2 flex items-center justify-center gap-1.5 w-full"><span>🎖️</span> <span>${t('dashboard.statStatus')}</span></div>
+        <div class="text-[0.55rem] text-text-muted font-semibold uppercase tracking-wider mb-2 flex items-center justify-center gap-1.5 w-full"><i data-lucide="award" class="w-3.5 h-3.5"></i> <span>${t('dashboard.statStatus')}</span></div>
         <div class="text-sm font-bold flex items-center justify-center h-6 w-full">${forkLabel}</div>
       </div>
       <div class="flex flex-col items-center bg-surface-1 hover:bg-surface-2 transition-colors py-3 px-2 rounded-xl border border-border-light justify-center shadow-sm hover:shadow-glow-cyan">
-        <div class="text-[0.55rem] text-text-muted font-semibold uppercase tracking-wider mb-2 flex items-center justify-center gap-1.5 w-full"><span>🔥</span> <span>${t('dashboard.statStreak')}</span></div>
+        <div class="text-[0.55rem] text-text-muted font-semibold uppercase tracking-wider mb-2 flex items-center justify-center gap-1.5 w-full"><i data-lucide="flame" class="w-3.5 h-3.5"></i> <span>${t('dashboard.statStreak')}</span></div>
         <div class="text-lg font-mono font-bold text-white h-6 flex items-center justify-center w-full">${streakDays}</div>
       </div>
       <div class="flex flex-col items-center bg-surface-1 hover:bg-surface-2 transition-colors py-3 px-2 rounded-xl border border-border-light justify-center shadow-sm hover:shadow-glow-cyan">
-        <div class="text-[0.55rem] text-text-muted font-semibold uppercase tracking-wider mb-2 flex items-center justify-center gap-1.5 w-full"><span>⚡</span> <span>${t('dashboard.statPoints')}</span></div>
+        <div class="text-[0.55rem] text-text-muted font-semibold uppercase tracking-wider mb-2 flex items-center justify-center gap-1.5 w-full"><i data-lucide="zap" class="w-3.5 h-3.5"></i> <span>${t('dashboard.statPoints')}</span></div>
         <div class="text-lg font-mono font-bold text-white h-6 flex items-center justify-center w-full">${userData.totalPoints.toLocaleString()}</div>
       </div>
       <div class="flex flex-col items-center bg-surface-1 hover:bg-surface-2 transition-colors py-3 px-2 rounded-xl border border-border-light justify-center shadow-sm hover:shadow-glow-cyan">
-        <div class="text-[0.55rem] text-text-muted font-semibold uppercase tracking-wider mb-2 flex items-center justify-center gap-1.5 w-full"><span>📡</span> <span title="${t('dashboard.statGms')}">${t('dashboard.statGms')}</span></div>
+        <div class="text-[0.55rem] text-text-muted font-semibold uppercase tracking-wider mb-2 flex items-center justify-center gap-1.5 w-full"><i data-lucide="radio" class="w-3.5 h-3.5"></i> <span title="${t('dashboard.statGms')}">${t('dashboard.statGms')}</span></div>
         <div class="text-lg font-mono font-bold text-white h-6 flex items-center justify-center w-full">${userData.gmCount}</div>
       </div>
     </div>
@@ -389,6 +397,9 @@ function renderUserPanel(userData, gmCost, gmDoneToday) {
     </div>
     ` : ''}
   `;
+
+  // Renderizar iconos de Lucide recién inyectados
+  createIcons({ icons });
 
   // Re-registrar el botón de reset si fue renderizado dinámicamente
   const btnReset = document.getElementById('btn-reset-vip');
@@ -537,24 +548,42 @@ function renderNodesStatus(userData) {
 
     const streakEl = document.getElementById(`node${node.id}-streak-needed`);
     if (streakEl) {
-      if (node.active) {
-        streakEl.style.display = 'none';
-      } else {
-        streakEl.style.display = 'inline-block';
-        streakEl.textContent = t(`nodes.node${node.id}.req`);
-        streakEl.classList.remove('text-success', 'bg-success/10');
-        streakEl.classList.add('text-warning', 'bg-warning/10');
-      }
+      // Ocultamos permanentemente el tag amarillo según lo solicitado
+      streakEl.style.display = 'none';
     }
 
     const btnStreak = document.getElementById(`btn-node${node.id}-streak`);
     const btnInstant = document.getElementById(`btn-node${node.id}-instant`);
+    const dataContainer = document.getElementById(`node${node.id}-data`);
+
+    const bgShape = document.getElementById(`node${node.id}-bg`);
+    if (bgShape) {
+      bgShape.style.display = node.active ? 'block' : 'none';
+    }
+
     if (node.active) {
       if (btnStreak) btnStreak.style.display = 'none';
       if (btnInstant) btnInstant.style.display = 'none';
+      if (dataContainer) dataContainer.style.display = '';
     } else {
-      if (btnStreak) btnStreak.style.display = 'inline-block';
-      if (btnInstant) btnInstant.style.display = 'inline-block';
+      if (btnStreak) {
+        btnStreak.style.display = 'flex';
+        const currentStreak = userData.currentStreak || 0;
+        const translatedText = t(`nodes.node${node.id}.streakBtn`);
+        btnStreak.innerHTML = `<span>${translatedText}<br>(${currentStreak}/${node.streak})</span>`;
+        
+        if (currentStreak < node.streak) {
+          btnStreak.disabled = true;
+          btnStreak.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+          btnStreak.disabled = false;
+          btnStreak.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        createIcons({ icons, root: btnStreak });
+      }
+      if (btnInstant) btnInstant.style.display = 'flex';
+      if (dataContainer) dataContainer.style.display = 'none';
     }
   });
 
@@ -565,7 +594,8 @@ function renderNodesStatus(userData) {
     if (runestone) {
       runestoneEl.classList.remove('text-text-muted', 'border-border-color/50');
       runestoneEl.classList.add('text-runestone', 'border-runestone/50', 'shadow-[0_0_15px_rgba(232,121,249,0.3)]');
-      runestoneEl.textContent = t('nodes.runestoneActive');
+      runestoneEl.innerHTML = t('nodes.runestoneActive');
+      createIcons({ icons, root: runestoneEl });
     } else {
       runestoneEl.classList.remove('text-runestone', 'border-runestone/50', 'shadow-[0_0_15px_rgba(232,121,249,0.3)]');
       runestoneEl.classList.add('text-text-muted', 'border-border-color/50');
@@ -782,48 +812,43 @@ async function renderAgentPanel(userData) {
 
   if (userData.attachedAgentId > 0) {
     container.innerHTML = `
-      <div class="mt-2 bg-runestone/10 border border-runestone/30 p-3 rounded flex items-center justify-between">
-        <div class="flex flex-col">
-          <span class="text-[0.65rem] text-text-muted uppercase">${t('dashboard.agentTitle')}</span>
-          <span class="text-sm font-bold text-runestone">🤖 ID: ${userData.attachedAgentId}</span>
-        </div>
-        <div class="text-[0.65rem] text-text-muted max-w-[100px] text-right leading-tight">
-          ${t('dashboard.agentActiveDesc')}
-        </div>
+      <div class="bg-runestone/10 border border-runestone/30 px-2 py-1 rounded flex items-center justify-end gap-2">
+        <span class="text-[0.65rem] text-text-muted hidden sm:inline uppercase">${t('dashboard.agentTitle')}</span>
+        <span class="text-xs font-bold text-runestone flex items-center gap-1"><i data-lucide="bot" class="w-3.5 h-3.5"></i> ${userData.attachedAgentId}</span>
       </div>
     `;
+    createIcons({ icons, root: container });
     return;
   }
 
   // Estado: Runestone activo pero sin agente. Buscamos agentes en la blockchain.
-  container.innerHTML = `<p class="animate-pulse text-xs mt-2">${t('dashboard.agentSearching')}</p>`;
+  container.innerHTML = `<p class="animate-pulse text-[0.65rem] text-right">${t('dashboard.agentSearching')}</p>`;
   
   try {
     const userAgents = await fetchUserAgents(appState.address);
 
     if (userAgents.length === 0) {
       container.innerHTML = `
-        <div class="mt-2 flex items-center justify-between bg-surface/30 p-1.5 rounded border border-border-color/30">
-          <span class="text-[0.6rem] text-error flex items-center gap-1 cursor-help relative group/tt">
-            ⚠️ <span class="hidden sm:inline">No Agents</span>
-            <div class="absolute bottom-full left-0 mb-2 w-48 p-2 bg-surface-2 border border-error/50 rounded shadow-xl text-[0.55rem] text-text-muted opacity-0 group-hover/tt:opacity-100 pointer-events-none transition-opacity z-50 text-left normal-case tracking-normal">
+        <div class="flex items-center justify-end gap-2">
+          <span class="text-error cursor-help relative group/tt flex items-center">
+            <i data-lucide="triangle-alert" class="w-4 h-4"></i>
+            <div class="absolute bottom-full right-0 mb-2 w-48 p-2 bg-surface-2 border border-error/50 rounded shadow-xl text-[0.55rem] text-text-muted opacity-0 group-hover/tt:opacity-100 pointer-events-none transition-opacity z-50 text-left normal-case tracking-normal">
               ${t('dashboard.agentNoneFound')}
             </div>
           </span>
-          <a href="https://testnet.arcscan.app/address/0x8004A818BFB912233c491871b3d84c89A494BD9e" target="_blank" class="bg-surface hover:bg-border border border-border-color text-white px-2 py-0.5 rounded text-[0.6rem] transition-colors">${t('dashboard.agentRegisterBtn')}</a>
+          <a href="https://testnet.arcscan.app/address/0x8004A818BFB912233c491871b3d84c89A494BD9e" target="_blank" class="bg-surface hover:bg-border border border-border-color text-white px-2 py-1 rounded text-[0.6rem] transition-colors whitespace-nowrap">${t('dashboard.agentRegisterBtn')}</a>
         </div>
       `;
+      createIcons({ icons, root: container });
     } else {
       let options = userAgents.map(id => `<option value="${id.toString()}">${t('dashboard.agentOption', { id: id.toString() })}</option>`).join('');
       container.innerHTML = `
-        <div class="mt-2">
-          <div class="flex gap-2">
-            <select id="input-agent-id" class="flex-1 bg-surface border border-border-color rounded text-xs px-2 py-1.5 focus:border-primary outline-none">
-              <option value="" disabled selected>${t('dashboard.agentSelectPlaceholder')}</option>
-              ${options}
-            </select>
-            <button id="btn-attach-agent" class="bg-primary/20 hover:bg-primary/40 border border-primary/50 text-primary px-3 py-1.5 rounded text-xs transition-colors whitespace-nowrap">${t('js.attachAgentBtn') || 'Vincular Agente'}</button>
-          </div>
+        <div class="flex items-center justify-end gap-2">
+          <select id="input-agent-id" class="bg-surface border border-border-color rounded text-[0.6rem] px-1.5 py-1 focus:border-primary outline-none">
+            <option value="" disabled selected>${t('dashboard.agentSelectPlaceholder')}</option>
+            ${options}
+          </select>
+          <button id="btn-attach-agent" class="bg-primary/20 hover:bg-primary/40 border border-primary/50 text-primary px-2 py-1 rounded text-[0.6rem] transition-colors whitespace-nowrap">${t('js.attachAgentBtn') || 'Vincular Agente'}</button>
         </div>
       `;
 
@@ -885,8 +910,16 @@ function showToast(message, type = 'info') {
     document.body.appendChild(toast);
   }
 
-  toast.textContent = message;
-  toast.className = `toast toast-${type} show`;
+  // Parsear emojis a iconos Lucide
+  const formattedMessage = message
+    .replace('⚠️', '<i data-lucide="triangle-alert" class="inline w-4 h-4 mr-1 align-middle"></i>')
+    .replace('❌', '<i data-lucide="circle-x" class="inline w-4 h-4 mr-1 align-middle"></i>')
+    .replace('✅', '<i data-lucide="circle-check" class="inline w-4 h-4 mr-1 align-middle"></i>');
+
+  toast.innerHTML = formattedMessage;
+  toast.className = `toast toast-${type} show flex items-center justify-center`;
+  
+  createIcons({ icons, root: toast });
 
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => toast.classList.remove('show'), 4000);

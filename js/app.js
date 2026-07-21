@@ -23,12 +23,7 @@ import { initNetworkPanel, stopPolling, renderNetworkStats } from './network.js'
 import { Cache } from './cache.js';
 import { initAppKit, depositFromBase, depositFromArb, spendToArc } from './app-kit.js';
 import { initI18n, setLanguage, getLanguage, t } from './i18n.js';
-
-// Inyectar icono de Github manualmente (removido de las versiones recientes de lucide)
-lucide.icons.Github = [
-  ["path", { "d": "M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" }],
-  ["path", { "d": "M9 18c-4.51 2-5-2-7-2" }]
-];
+import { renderIcons } from './icons.js';
 
 // ─── Estado global de la UI ───────────────────────────────────────────────
 
@@ -45,7 +40,7 @@ let appState = {
 // ─── Init ─────────────────────────────────────────────────────────────────
 
 window.addEventListener('DOMContentLoaded', () => {
-  lucide.createIcons();
+  renderIcons();
   initI18n();
   setupWalletListeners();
   setupGlobalButtons();
@@ -398,7 +393,7 @@ function renderUserPanel(userData, gmCost, gmDoneToday) {
   `;
 
   // Renderizar iconos de Lucide recién inyectados
-  lucide.createIcons();
+  renderIcons();
 
   // Re-registrar el botón de reset si fue renderizado dinámicamente
   const btnReset = document.getElementById('btn-reset-vip');
@@ -579,7 +574,7 @@ function renderNodesStatus(userData) {
           btnStreak.classList.remove('opacity-50', 'cursor-not-allowed');
         }
 
-        lucide.createIcons({ root: btnStreak });
+        renderIcons(btnStreak);
       }
       if (btnInstant) btnInstant.style.display = 'flex';
       if (dataContainer) dataContainer.style.display = 'none';
@@ -594,7 +589,7 @@ function renderNodesStatus(userData) {
       runestoneEl.classList.remove('text-text-muted', 'border-border-color/50');
       runestoneEl.classList.add('text-runestone', 'border-runestone/50', 'shadow-[0_0_15px_rgba(232,121,249,0.3)]');
       runestoneEl.innerHTML = t('nodes.runestoneActive');
-      lucide.createIcons({ root: runestoneEl });
+      renderIcons(runestoneEl);
     } else {
       runestoneEl.classList.remove('text-runestone', 'border-runestone/50', 'shadow-[0_0_15px_rgba(232,121,249,0.3)]');
       runestoneEl.classList.add('text-text-muted', 'border-border-color/50');
@@ -632,7 +627,7 @@ async function loadNodesData() {
     renderCommitmentData(commitment);
     renderConvictionData(conviction);
     renderLegacyData(legacy);
-    lucide.createIcons();
+    renderIcons();
   } catch (err) {
     console.error('[Nodes]', err);
     showToast(`❌ Error al cargar datos de nodos: ${err.message}`, 'error');
@@ -817,7 +812,7 @@ async function renderAgentPanel(userData) {
         <span class="text-xs font-bold text-runestone flex items-center gap-1"><i data-lucide="bot" class="w-3.5 h-3.5"></i> ${userData.attachedAgentId}</span>
       </div>
     `;
-    lucide.createIcons({ root: container });
+    renderIcons(container);
     return;
   }
 
@@ -839,7 +834,7 @@ async function renderAgentPanel(userData) {
           <a href="https://testnet.arcscan.app/address/0x8004A818BFB912233c491871b3d84c89A494BD9e" target="_blank" class="bg-surface hover:bg-border border border-border-color text-white px-2 py-1 rounded text-[0.6rem] transition-colors whitespace-nowrap">${t('dashboard.agentRegisterBtn')}</a>
         </div>
       `;
-      lucide.createIcons({ root: container });
+      renderIcons(container);
     } else {
       let options = userAgents.map(id => `<option value="${id.toString()}">${t('dashboard.agentOption', { id: id.toString() })}</option>`).join('');
       container.innerHTML = `
@@ -919,7 +914,7 @@ function showToast(message, type = 'info') {
   toast.innerHTML = formattedMessage;
   toast.className = `toast toast-${type} show flex items-center justify-center`;
   
-  lucide.createIcons();
+  renderIcons();
 
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => toast.classList.remove('show'), 4000);

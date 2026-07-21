@@ -8,6 +8,7 @@ import { getUserCount, getTopUsersFallback } from './contract.js';
 import { Cache } from './cache.js';
 import { CONSTANTS } from './config.js';
 import { t } from './i18n.js';
+import { renderIcons } from './icons.js';
 
 const { CACHE_TTL } = CONSTANTS;
 
@@ -155,11 +156,11 @@ export async function renderRanking(containerId, currentAddress = null, currentU
       </div>
     `;
     
-    lucide.createIcons();
+    renderIcons();
 
   } catch (err) {
     console.error('[Ranking] Error:', err);
     container.innerHTML = `<p class="error-text flex items-center justify-center gap-2"><i data-lucide="circle-x" class="w-4 h-4"></i> ${t('js.error')} ${err.message}</p>`;
-    lucide.createIcons();
+    renderIcons();
   }
 }

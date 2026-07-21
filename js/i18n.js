@@ -207,7 +207,6 @@ export const locales = {
       statStreak: 'Streak',
       statPoints: 'Score',
       statGms: 'GMs Realizados',
-      loadingContract: 'Cargando datos...',
       active: 'Activo',
       inactive: 'Inactivo',
       debt: 'deuda',
@@ -223,7 +222,16 @@ export const locales = {
       agentSelectPlaceholder: 'Selecciona tu Agente',
       agentSelectWarning: 'Selecciona un Agente de la lista.',
       agentAttaching: 'Vinculando...',
-      agentSearchError: '❌ Error al buscar agentes en la red.'
+      agentSearchError: '❌ Error al buscar agentes en la red.',
+      liveSignals: 'Señales en Vivo',
+      online: 'En Línea',
+      networkDesc: 'Estado en tiempo real de la red Arc Testnet consumido vía Blockscout API.',
+      syncing: 'Sincronizando con Arc Testnet...'
+    },
+    runestone: {
+      nodeCommitment: 'COMPROMISO',
+      nodeConviction: 'CONVICCIÓN',
+      nodeLegacy: 'LEGADO'
     },
     nodes: {
       title: '🔬 Nodos de Análisis',

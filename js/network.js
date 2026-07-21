@@ -7,8 +7,8 @@
 import { fetchNetworkStats } from './blockscout.js';
 import { CONSTANTS } from './config.js';
 import { t, getLanguage } from './i18n.js';
+import { renderIcons } from './icons.js';
 import Chart from 'chart.js/auto';
-import { createIcons, Fuel, Clock, Box, ArrowRightLeft } from 'lucide';
 
 const { NETWORK_POLL_INTERVAL } = CONSTANTS;
 
@@ -210,9 +210,7 @@ export async function renderNetworkStats(containerId) {
       charts.txs = createSparkline(document.getElementById('chart-txs').getContext('2d'), chartColors.txs);
       
       // Renderizar iconos de Lucide
-      createIcons({
-        icons: { Fuel, Clock, Box, ArrowRightLeft }
-      });
+      renderIcons();
       
       _domInitialized = true;
     }

@@ -10,13 +10,13 @@ export const locales = {
       preferences: 'Preferences',
       language: 'Language',
       back: 'Back',
-      connect: '🔗 Connect',
+      connect: 'Connect',
       disconnect: 'Disconnect'
     },
     hero: {
       title: 'Signal 0xL',
       desc: 'On-chain signaling platform for Arc Testnet. Leave your daily mark, track your commitment, and climb the leaderboard.',
-      connectBtn: '🔗 Connect Wallet',
+      connectBtn: 'Connect Wallet',
       networkInfo: 'Network: Arc Testnet · Chain ID: 5042002'
     },
     dashboard: {
@@ -24,7 +24,7 @@ export const locales = {
       loadingContract: 'Loading data...',
       dailyGmTitle: '📡 Daily Signal',
       dailyGmDesc: 'Send your daily signal to Arc Testnet. Window: 00:00–23:59 UTC. +1 point (+2 with Runestone).',
-      btnGmDisabled: '🔗 Connect your wallet to start',
+      btnGmDisabled: 'Connect your wallet to start',
       btnGmActive: '🚀 Send Signal (GM)',
       btnGmDone: '✅ GM Sent Today',
       btnSuperGm: '🔮 SUPER GM (Runestone)',
@@ -141,7 +141,7 @@ export const locales = {
       loading: 'Loading...',
       userStatus: 'You are on Fork B{fork} • {pts} Pts • Streak {streak}',
       attachedAgent: 'Attached Agent: #{id}',
-      attachAgentBtn: '🔗 Attach AI Agent',
+      attachAgentBtn: 'Attach AI Agent',
       attachAgentPrompt: 'Enter the Token ID (ERC-8004) of your Agent:',
       invalidAgentId: 'Invalid Token ID.',
       agentAttachedMsg: 'Agent attached successfully!',
@@ -175,13 +175,13 @@ export const locales = {
       preferences: 'Preferencias',
       language: 'Idioma',
       back: 'Volver',
-      connect: '🔗 Conectar',
+      connect: 'Conectar',
       disconnect: 'Cerrar Sesión'
     },
     hero: {
       title: 'Signal 0xL',
       desc: 'Plataforma de señales en cadena para Arc Testnet. Deja tu huella diaria, analiza tu compromiso y escala en el ranking.',
-      connectBtn: '🔗 Conectar Wallet',
+      connectBtn: 'Conectar Wallet',
       networkInfo: 'Red: Arc Testnet · Chain ID: 5042002'
     },
     dashboard: {
@@ -189,7 +189,7 @@ export const locales = {
       loadingContract: 'Cargando datos...',
       dailyGmTitle: '📡 Señal Diaria',
       dailyGmDesc: 'Envía tu señal diaria a Arc Testnet. Ventana: 00:00–23:59 UTC. +1 punto (+2 con Runestone).',
-      btnGmDisabled: '🔗 Conecta tu wallet para empezar',
+      btnGmDisabled: 'Conecta tu wallet para empezar',
       btnGmActive: '🚀 Enviar Señal (GM)',
       btnGmDone: '✅ GM Enviado Hoy',
       btnSuperGm: '🔮 SUPER GM (Runestone)',
@@ -306,7 +306,7 @@ export const locales = {
       loading: 'Cargando...',
       userStatus: 'Estás en Bifurcación B{fork} • {pts} Pts • Racha {streak}',
       attachedAgent: 'Agente Vinculado: #{id}',
-      attachAgentBtn: '🔗 Vincular Agente IA',
+      attachAgentBtn: 'Vincular Agente IA',
       attachAgentPrompt: 'Ingresa el Token ID (ERC-8004) de tu Agente:',
       invalidAgentId: 'Token ID inválido.',
       agentAttachedMsg: '¡Agente vinculado exitosamente!',

@@ -244,11 +244,12 @@ async function handleConnect() {
         <span>${shortAddress(address)}</span>
       `;
       setButtonLoading('btn-connect-wallet', false, btnHtml);
-      setButtonLoading('btn-connect-wallet-hero', false, '🔗 Conectar Wallet');
+      setButtonLoading('btn-connect-wallet-hero', false, `<i data-lucide="check" class="w-5 h-5"></i> <span data-i18n="hero.connectBtn">${t('hero.connectBtn') || 'Conectar Wallet'}</span>`);
     } else {
-      setButtonLoading('btn-connect-wallet', false, '🔗 Conectar');
-      setButtonLoading('btn-connect-wallet-hero', false, '🔗 Conectar Wallet');
+      setButtonLoading('btn-connect-wallet', false, `<i data-lucide="link" class="w-4 h-4"></i> <span data-i18n="header.connect">${t('header.connect') || 'Conectar'}</span>`);
+      setButtonLoading('btn-connect-wallet-hero', false, `<i data-lucide="link" class="w-5 h-5"></i> <span data-i18n="hero.connectBtn">${t('hero.connectBtn') || 'Conectar Wallet'}</span>`);
     }
+    if (window.lucide) window.lucide.createIcons();
   }
 }
 
@@ -883,9 +884,9 @@ function setButtonLoading(id, loading, label) {
   btn.disabled = loading;
   const txt = document.getElementById(id + '-text');
   if (txt) {
-    txt.textContent = label;
+    txt.innerHTML = label;
   } else {
-    btn.textContent = label;
+    btn.innerHTML = label;
   }
 }
 
